@@ -31,7 +31,7 @@ const BookingPage = () => {
   useEffect(() => {
     // 从"我的"页面读取用户信息作为默认联系人
     const nickname = Taro.getStorageSync('user_nickname') || ''
-    const phone = Taro.getStorageSync('user_phone') || ''
+    const phone = Taro.getStorageSync('user_phone_raw') || ''
     if (nickname) setContactName(nickname)
     if (phone) setContactPhone(phone)
 

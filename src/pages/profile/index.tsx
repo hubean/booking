@@ -1,7 +1,7 @@
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { Calendar, Phone, Info, Settings, Camera, Pencil, Shield } from 'lucide-react-taro'
+import { Calendar, Phone, Info, Settings, Camera, Pencil, Shield, Lock } from 'lucide-react-taro'
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 
@@ -14,20 +14,23 @@ interface UserInfo {
 
 const ProfilePage = () => {
   const [userInfo, setUserInfo] = useState<UserInfo>({
-    nickname: Taro.getStorageSync('user_nickname') || '小初',
-    phone: Taro.getStorageSync('user_phone') || '138****0000',
+    nickname: Taro.getStorageSync('user_nickname') || '',
+    phone: Taro.getStorageSync('user_phone') || '',
     totalAppointments: 0,
     pendingAppointments: 0,
   })
   const [showNameDialog, setShowNameDialog] = useState(false)
+  const [showPhoneDialog, setShowPhoneDialog] = useState(false)
   const [editName, setEditName] = useState('')
+  const [editPhone, setEditPhone] = useState('')
+
+  const hasNickname = !!userInfo.nickname
+  const hasPhone = !!userInfo.phone
 
   useEffect(() => {
     fetchUserStats()
-    // 监听预约变更事件，刷新统计
     const handleRefresh = () => fetchUserStats()
     Taro.eventCenter.on('appointment:changed', handleRefresh)
-    // 页面显示时也刷新（从其他Tab切回来）
     const onShow = () => fetchUserStats()
     Taro.eventCenter.on('onShow', onShow)
     return () => {
@@ -58,12 +61,29 @@ const ProfilePage = () => {
     setShowNameDialog(true)
   }
 
+  const handleEditPhone = () => {
+    // 电话已设置则不可修改
+    if (hasPhone) return
+    setEditPhone('')
+    setShowPhoneDialog(true)
+  }
+
   const saveName = () => {
     if (editName.trim()) {
       setUserInfo((prev) => ({ ...prev, nickname: editName.trim() }))
       Taro.setStorageSync('user_nickname', editName.trim())
     }
     setShowNameDialog(false)
+  }
+
+  const savePhone = () => {
+    if (editPhone.trim()) {
+      const masked = editPhone.trim().replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+      setUserInfo((prev) => ({ ...prev, phone: masked }))
+      Taro.setStorageSync('user_phone', masked)
+      Taro.setStorageSync('user_phone_raw', editPhone.trim())
+    }
+    setShowPhoneDialog(false)
   }
 
   const goAdminLogin = () => {
@@ -74,7 +94,7 @@ const ProfilePage = () => {
     Taro.switchTab({ url: '/pages/appointments/index' })
   }
 
-  const avatarLetter = userInfo.nickname.charAt(0)
+  const avatarLetter = hasNickname ? userInfo.nickname.charAt(0) : '?'
 
   return (
     <View className="flex flex-col h-full bg-background">
@@ -90,13 +110,26 @@ const ProfilePage = () => {
             </View>
           </View>
           <View className="flex-1 min-w-0">
-            <View className="flex items-center gap-2">
-              <Text className="text-lg font-semibold text-foreground">{userInfo.nickname}</Text>
-              <View onClick={handleEditName}>
-                <Pencil size={14} color="#6B7280" />
-              </View>
+            {/* 昵称行 */}
+            <View className="flex items-center gap-2" onClick={handleEditName}>
+              {hasNickname ? (
+                <Text className="text-lg font-semibold text-foreground">{userInfo.nickname}</Text>
+              ) : (
+                <Text className="text-lg text-muted-foreground">请输入昵称</Text>
+              )}
+              <Pencil size={14} color="#6B7280" />
             </View>
-            <Text className="block text-sm text-muted-foreground mt-1">{userInfo.phone}</Text>
+            {/* 电话行 */}
+            <View className="flex items-center gap-2 mt-1" onClick={handleEditPhone}>
+              {hasPhone ? (
+                <>
+                  <Text className="text-sm text-muted-foreground">{userInfo.phone}</Text>
+                  <Lock size={12} color="#9CA3AF" />
+                </>
+              ) : (
+                <Text className="text-sm text-muted-foreground">请输入电话</Text>
+              )}
+            </View>
           </View>
         </View>
 
@@ -176,7 +209,9 @@ const ProfilePage = () => {
           }}
         >
           <View className="w-full bg-card rounded-t-2xl p-6" style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }}>
-            <Text className="block text-base font-semibold text-foreground mb-4">修改昵称</Text>
+            <Text className="block text-base font-semibold text-foreground mb-4">
+              {hasNickname ? '修改昵称' : '输入昵称'}
+            </Text>
             <Input
               className="bg-muted border-none rounded-2xl mb-6"
               placeholder="请输入昵称"
@@ -194,6 +229,52 @@ const ProfilePage = () => {
               <View
                 className="flex-1 bg-primary rounded-xl py-3 flex items-center justify-center"
                 onClick={saveName}
+              >
+                <Text className="text-sm font-medium text-primary-foreground">保存</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* 编辑电话弹窗 */}
+      {showPhoneDialog && (
+        <View
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          }}
+        >
+          <View className="w-full bg-card rounded-t-2xl p-6" style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }}>
+            <Text className="block text-base font-semibold text-foreground mb-2">输入电话号码</Text>
+            <Text className="block text-xs text-muted-foreground mb-4">电话号码保存后不可修改，请谨慎填写</Text>
+            <Input
+              className="bg-muted border-none rounded-2xl mb-6"
+              placeholder="请输入手机号"
+              type={'number' as never}
+              maxlength={11}
+              value={editPhone}
+              onInput={(e) => setEditPhone(e.detail.value)}
+              focus
+            />
+            <View style={{ display: 'flex', gap: '12px' }}>
+              <View
+                className="flex-1 bg-muted rounded-xl py-3 flex items-center justify-center"
+                onClick={() => setShowPhoneDialog(false)}
+              >
+                <Text className="text-sm font-medium text-foreground">取消</Text>
+              </View>
+              <View
+                className="flex-1 bg-primary rounded-xl py-3 flex items-center justify-center"
+                onClick={savePhone}
               >
                 <Text className="text-sm font-medium text-primary-foreground">保存</Text>
               </View>
