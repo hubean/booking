@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { View, Text } from '@tarojs/components'
-import { Input } from '@/components/ui/input'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 import { Scissors } from 'lucide-react-taro'
@@ -214,22 +213,23 @@ const BookingPage = () => {
 
         <View className="mt-6 px-4">
           <Text className="block text-base font-semibold text-foreground mb-3">联系信息</Text>
-          <View className="mb-3">
-            <Input
-              className="bg-muted border-none rounded-2xl"
-              placeholder="请输入姓名"
-              value={contactName}
-              onInput={(e) => setContactName(e.detail.value)}
-            />
+          <View className="space-y-3">
+            <View className="bg-muted rounded-2xl px-4 py-3">
+              <Text className="block text-xs text-muted-foreground mb-1">姓名</Text>
+              <Text className="block text-sm text-foreground">{contactName || '未填写'}</Text>
+            </View>
+            <View className="bg-muted rounded-2xl px-4 py-3">
+              <Text className="block text-xs text-muted-foreground mb-1">手机号</Text>
+              <Text className="block text-sm text-foreground">{contactPhone || '未填写'}</Text>
+            </View>
           </View>
-          <Input
-            className="bg-muted border-none rounded-2xl"
-            placeholder="请输入手机号"
-            type="number"
-            maxlength={11}
-            value={contactPhone}
-            onInput={(e) => setContactPhone(e.detail.value)}
-          />
+          {(!contactName || !contactPhone) && (
+            <View className="mt-3">
+              <Text className="block text-xs text-muted-foreground">
+                联系信息需在【我的】页面完善
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 

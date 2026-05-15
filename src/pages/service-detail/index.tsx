@@ -35,9 +35,24 @@ const ServiceDetailPage = () => {
   }
 
   const goToBooking = () => {
-    if (detail) {
-      Taro.navigateTo({ url: `/pages/booking/index?serviceId=${detail.id}` })
+    if (!detail) return
+    const nickname = Taro.getStorageSync('user_nickname') || ''
+    const phone = Taro.getStorageSync('user_phone_raw') || ''
+    if (!nickname || !phone) {
+      Taro.showModal({
+        title: '提示',
+        content: '请先在【我的】页面完善个人信息后再预约',
+        confirmText: '去完善',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            Taro.switchTab({ url: '/pages/profile/index' })
+          }
+        },
+      })
+      return
     }
+    Taro.navigateTo({ url: `/pages/booking/index?serviceId=${detail.id}` })
   }
 
   const formatPrice = (priceInFen: number) => (priceInFen / 100).toFixed(0)
