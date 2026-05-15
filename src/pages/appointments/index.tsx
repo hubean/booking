@@ -36,6 +36,12 @@ const AppointmentsPage = () => {
 
   useEffect(() => {
     fetchAppointments()
+    // 监听预约变更事件
+    const handleRefresh = () => fetchAppointments()
+    Taro.eventCenter.on('appointment:changed', handleRefresh)
+    return () => {
+      Taro.eventCenter.off('appointment:changed', handleRefresh)
+    }
   }, [activeTab])
 
   const fetchAppointments = async () => {
@@ -70,6 +76,7 @@ const AppointmentsPage = () => {
       const data = res.data
       if (data?.code === 200) {
         Taro.showToast({ title: '取消成功', icon: 'success' })
+        Taro.eventCenter.trigger('appointment:changed')
         fetchAppointments()
       } else {
         Taro.showToast({ title: data?.msg || '取消失败', icon: 'none' })
@@ -85,20 +92,18 @@ const AppointmentsPage = () => {
   return (
     <View className="flex flex-col h-full bg-background">
       {/* Tab 切换栏 */}
-      <View className="bg-surface sticky top-0 z-30 flex px-4 border-b border-border">
+      <View className="bg-surface sticky top-0 z-30 px-4 pt-3 pb-2 flex gap-2">
         {TABS.map((tab) => (
           <View
             key={tab.key}
-            className={`flex-1 py-3 flex items-center justify-center relative ${
-              activeTab === tab.key ? 'border-b-2 border-primary' : ''
+            className={`px-3 py-1 rounded-full text-sm font-medium border transition-all ${
+              activeTab === tab.key
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-surface text-muted-foreground border-border'
             }`}
             onClick={() => setActiveTab(tab.key)}
           >
-            <Text
-              className={`text-sm font-medium ${
-                activeTab === tab.key ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
+            <Text className={`text-sm font-medium ${activeTab === tab.key ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
               {tab.label}
             </Text>
           </View>

@@ -102,7 +102,15 @@ const BookingPage = () => {
       console.log('[Booking] createAppointment:', res.data)
       const data = res.data
       if (data?.code === 200) {
-        Taro.redirectTo({ url: '/pages/booking-success/index' })
+        // 通知其他页面刷新数据
+        Taro.eventCenter.trigger('appointment:changed')
+        const params = [
+          `serviceName=${encodeURIComponent(serviceInfo.name)}`,
+          `date=${encodeURIComponent(dates[selectedDate].fullDate)}`,
+          `timeSlot=${encodeURIComponent(selectedTime)}`,
+          `contactName=${encodeURIComponent(contactName)}`,
+        ].join('&')
+        Taro.redirectTo({ url: `/pages/booking-success/index?${params}` })
       } else {
         Taro.showToast({ title: data?.msg || '预约失败', icon: 'none' })
       }

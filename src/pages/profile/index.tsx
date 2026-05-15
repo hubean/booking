@@ -24,6 +24,16 @@ const ProfilePage = () => {
 
   useEffect(() => {
     fetchUserStats()
+    // 监听预约变更事件，刷新统计
+    const handleRefresh = () => fetchUserStats()
+    Taro.eventCenter.on('appointment:changed', handleRefresh)
+    // 页面显示时也刷新（从其他Tab切回来）
+    const onShow = () => fetchUserStats()
+    Taro.eventCenter.on('onShow', onShow)
+    return () => {
+      Taro.eventCenter.off('appointment:changed', handleRefresh)
+      Taro.eventCenter.off('onShow', onShow)
+    }
   }, [])
 
   const fetchUserStats = async () => {
@@ -87,13 +97,12 @@ const ProfilePage = () => {
 
         {/* 预约统计卡片 */}
         <View className="mx-4 mt-4">
-          <View className="bg-card rounded-2xl shadow-card p-4 flex items-center">
-            <View className="flex-1 flex flex-col items-center" onClick={goAppointments}>
+          <View className="bg-card rounded-2xl shadow-card p-4 flex items-center gap-4">
+            <View className="flex-1 flex flex-col items-center bg-muted rounded-xl py-3" onClick={goAppointments}>
               <Text className="block text-2xl font-bold text-foreground">{userInfo.totalAppointments}</Text>
               <Text className="block text-xs text-muted-foreground mt-1">总预约</Text>
             </View>
-            <View className="w-px h-8 bg-border" />
-            <View className="flex-1 flex flex-col items-center" onClick={goAppointments}>
+            <View className="flex-1 flex flex-col items-center bg-muted rounded-xl py-3" onClick={goAppointments}>
               <Text className="block text-2xl font-bold text-primary">{userInfo.pendingAppointments}</Text>
               <Text className="block text-xs text-muted-foreground mt-1">待服务</Text>
             </View>
@@ -104,7 +113,7 @@ const ProfilePage = () => {
         <View className="mx-4 mt-4">
           <View className="bg-card rounded-2xl shadow-card overflow-hidden">
             <View
-              className="flex items-center px-4 py-4 border-b border-border"
+              className="flex items-center px-4 py-4"
               onClick={goAppointments}
             >
               <View className="w-8 h-8 bg-primary-container rounded-lg flex items-center justify-center mr-3">
@@ -113,14 +122,14 @@ const ProfilePage = () => {
               <Text className="flex-1 text-sm text-foreground">我的预约</Text>
               <Text className="text-sm text-muted-foreground">›</Text>
             </View>
-            <View className="flex items-center px-4 py-4 border-b border-border">
+            <View className="flex items-center px-4 py-4">
               <View className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mr-3">
                 <Phone size={16} color="#22c55e" />
               </View>
               <Text className="flex-1 text-sm text-foreground">联系客服</Text>
               <Text className="text-sm text-muted-foreground">›</Text>
             </View>
-            <View className="flex items-center px-4 py-4 border-b border-border">
+            <View className="flex items-center px-4 py-4">
               <View className="w-8 h-8 bg-primary-container rounded-lg flex items-center justify-center mr-3">
                 <Info size={16} color="#F97316" />
               </View>

@@ -1,8 +1,33 @@
+import { useEffect, useState } from 'react'
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { CircleCheck } from 'lucide-react-taro'
 
 const BookingSuccessPage = () => {
+  const [bookingInfo, setBookingInfo] = useState({
+    serviceName: '预约服务',
+    appointmentDate: '',
+    timeSlot: '',
+    contactName: '',
+  })
+
+  useEffect(() => {
+    // 从页面参数获取预约信息
+    const instance = Taro.getCurrentInstance()
+    const params = instance?.router?.params || {}
+    console.log('[BookingSuccess] params:', params)
+    if (params.serviceName) {
+      setBookingInfo({
+        serviceName: decodeURIComponent(params.serviceName || ''),
+        appointmentDate: decodeURIComponent(params.date || ''),
+        timeSlot: decodeURIComponent(params.timeSlot || ''),
+        contactName: decodeURIComponent(params.contactName || ''),
+      })
+    }
+    // 通知其他页面刷新数据
+    Taro.eventCenter.trigger('appointment:changed')
+  }, [])
+
   const goAppointments = () => {
     Taro.switchTab({ url: '/pages/appointments/index' })
   }
@@ -26,15 +51,29 @@ const BookingSuccessPage = () => {
         <View className="bg-card rounded-2xl shadow-card p-5">
           <View className="flex justify-between items-center py-3 border-b border-border">
             <Text className="text-sm text-muted-foreground">服务名称</Text>
-            <Text className="text-sm font-medium text-foreground">预约服务</Text>
+            <Text className="text-sm font-medium text-foreground">{bookingInfo.serviceName}</Text>
           </View>
-          <View className="flex justify-between items-center py-3 border-b border-border">
+          {bookingInfo.appointmentDate && (
+            <View className="flex justify-between items-center py-3 border-b border-border">
+              <Text className="text-sm text-muted-foreground">预约日期</Text>
+              <Text className="text-sm font-medium text-foreground">{bookingInfo.appointmentDate}</Text>
+            </View>
+          )}
+          {bookingInfo.timeSlot && (
+            <View className="flex justify-between items-center py-3 border-b border-border">
+              <Text className="text-sm text-muted-foreground">预约时段</Text>
+              <Text className="text-sm font-medium text-foreground">{bookingInfo.timeSlot}</Text>
+            </View>
+          )}
+          {bookingInfo.contactName && (
+            <View className="flex justify-between items-center py-3 border-b border-border">
+              <Text className="text-sm text-muted-foreground">联系人</Text>
+              <Text className="text-sm font-medium text-foreground">{bookingInfo.contactName}</Text>
+            </View>
+          )}
+          <View className="flex justify-between items-center py-3">
             <Text className="text-sm text-muted-foreground">预约状态</Text>
             <Text className="text-sm font-medium text-primary">待服务</Text>
-          </View>
-          <View className="flex justify-between items-center py-3">
-            <Text className="text-sm text-muted-foreground">温馨提示</Text>
-            <Text className="text-sm text-muted-foreground">请准时到店</Text>
           </View>
         </View>
 
