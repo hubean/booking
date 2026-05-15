@@ -55,9 +55,25 @@ export const timeSlots = sqliteTable('time_slots', {
   bookedCount: integer('booked_count').notNull().default(0),
 })
 
+// 管理用户表
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  username: text('username').notNull().unique(),
+  password: text('password').notNull(), // bcrypt hash
+  role: text('role', { enum: ['admin', 'user'] }).notNull().default('user'),
+  mustChangePassword: integer('must_change_password', { mode: 'boolean' })
+    .notNull()
+    .default(false),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+})
+
 // 类型导出
 export type Service = typeof services.$inferSelect
 export type NewService = typeof services.$inferInsert
 export type Appointment = typeof appointments.$inferSelect
 export type NewAppointment = typeof appointments.$inferInsert
 export type TimeSlot = typeof timeSlots.$inferSelect
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert

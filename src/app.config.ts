@@ -6,6 +6,11 @@ export default defineAppConfig({
     'pages/service-detail/index',
     'pages/booking/index',
     'pages/booking-success/index',
+    'pages/admin/login/index',
+    'pages/admin/dashboard/index',
+    'pages/admin/services/index',
+    'pages/admin/appointments/index',
+    'pages/admin/users/index',
   ],
   window: {
     backgroundTextStyle: 'light',

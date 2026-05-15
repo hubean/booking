@@ -143,4 +143,49 @@ export class AppointmentService {
 
     return { data: { id, status: 'cancelled' } }
   }
+
+  // 管理端：获取所有预约（返回完整手机号）
+  async findAllAdmin(status?: string) {
+    let list
+    if (status) {
+      list = await db.select().from(appointments).where(eq(appointments.status, status as 'pending' | 'completed' | 'cancelled')).orderBy(desc(appointments.createdAt))
+    } else {
+      list = await db.select().from(appointments).orderBy(desc(appointments.createdAt))
+    }
+    return list
+  }
+
+  // 管理端：修改预约状态
+  async updateStatus(id: number, status: string) {
+    const result = await db.select().from(appointments).where(eq(appointments.id, id))
+    const appointment = result[0]
+    if (!appointment) {
+      return { error: { code: 404, msg: '预约不存在' } }
+    }
+
+    await db.update(appointments).set({ status: status as 'pending' | 'completed' | 'cancelled' }).where(eq(appointments.id, id))
+
+    // 如果取消，释放时段
+    if (status === 'cancelled' && appointment.status === 'pending') {
+      const slotResult = await db
+        .select()
+        .from(timeSlots)
+        .where(
+          and(
+            eq(timeSlots.serviceId, appointment.serviceId),
+            eq(timeSlots.date, appointment.appointmentDate),
+            eq(timeSlots.startTime, appointment.timeSlot),
+          ),
+        )
+      const slot = slotResult[0]
+      if (slot && slot.bookedCount > 0) {
+        await db
+          .update(timeSlots)
+          .set({ bookedCount: slot.bookedCount - 1 })
+          .where(eq(timeSlots.id, slot.id))
+      }
+    }
+
+    return { data: { id, status } }
+  }
 }

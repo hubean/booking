@@ -1,7 +1,9 @@
 import { Controller, Get, Query } from '@nestjs/common'
 import { TimeSlotService } from './time-slot.service'
 import { success, fail } from '@/common/utils/response'
+import { Public } from '@/common/decorators/public'
 
+@Public()
 @Controller('time-slots')
 export class TimeSlotController {
   constructor(private readonly timeSlotService: TimeSlotService) {}

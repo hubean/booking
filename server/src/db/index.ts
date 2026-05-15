@@ -46,6 +46,15 @@ export async function initDb() {
       max_capacity INTEGER NOT NULL DEFAULT 1,
       booked_count INTEGER NOT NULL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      must_change_password INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL
+    );
   `)
 
   // 执行种子数据

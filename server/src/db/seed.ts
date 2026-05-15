@@ -1,11 +1,11 @@
 import { eq, count } from 'drizzle-orm'
-import { services } from './schema'
-import type BetterSqlite3 from 'better-sqlite3'
+import { services, users } from './schema'
+import * as bcrypt from 'bcryptjs'
 
 export async function seed(db: ReturnType<typeof import('drizzle-orm/better-sqlite3').drizzle>) {
-  // 检查是否已有数据
-  const result = await db.select({ count: count() }).from(services)
-  if (result[0].count > 0) return
+  // 插入种子服务项目
+  const serviceResult = await db.select({ count: count() }).from(services)
+  if (serviceResult[0].count === 0) {
 
   // 插入种子服务项目
   await db.insert(services).values([
@@ -82,4 +82,18 @@ export async function seed(db: ReturnType<typeof import('drizzle-orm/better-sqli
       category: 'food',
     },
   ])
+
+  } // end if serviceResult
+
+  // 插入默认管理员
+  const userResult = await db.select({ count: count() }).from(users)
+  if (userResult[0].count === 0) {
+    const hashedPassword = await bcrypt.hash('admin', 10)
+    await db.insert(users).values({
+      username: 'admin',
+      password: hashedPassword,
+      role: 'admin',
+      mustChangePassword: true,
+    })
+  }
 }
