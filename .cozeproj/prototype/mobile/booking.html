@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* === 品牌色（橙色系，温暖亲和） === */
+      --color-primary:              #F97316;
+      --color-primary-container:    #FFF7ED;
+      --color-on-primary:           #ffffff;
+      /* === 背景 / 表面（M3 色调系统 + Apple HIG 呼吸感） === */
+      --color-background:                 #F9FAFB;
+      --color-surface-container-lowest:   #FFFFFF;
+      --color-surface:                    #FFFFFF;
+      --color-surface-container:          #F3F4F6;
+      --color-surface-container-high:     #E5E7EB;
+      --color-surface-container-highest:  #D1D5DB;
+      /* === 文字 === */
+      --color-on-surface:           #1F2433;
+      --color-on-surface-variant:   #6B7280;
+      /* === 功能色 === */
+      --color-success:  #22c55e;
+      --color-error:    #ef4444;
+      --color-warning:  #f59e0b;
+      /* === 边框 === */
+      --color-outline:          #374151;
+      --color-outline-variant:  #D1D5DB;
+      /* === 圆角 === */
+      --radius-sm:   0.375rem;
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-xl:   1rem;
+      --radius-2xl:  1.25rem;
+      --radius-full: 9999px;
+      /* === 阴影 === */
+      --shadow-card:   0 4px 12px rgba(0,0,0,0.06);
+      --shadow-float:  0 10px 25px rgba(0,0,0,0.08);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.12);
+      /* === 字体 === */
+      --font-sans: "Inter", "Noto Sans SC", system-ui, sans-serif;
+    }
+  </style>
+
+  <style>
+    body {
+      min-height: max(812px, 100dvh);
+      font-family: system-ui, sans-serif;
+    }
+    /* 日期卡片选中态 */
+    .date-card--active {
+      background-color: var(--color-primary) !important;
+      color: var(--color-on-primary) !important;
+    }
+    .date-card--active .date-weekday,
+    .date-card--active .date-num {
+      color: var(--color-on-primary) !important;
+    }
+    /* 时段按钮状态 */
+    .slot-btn {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .slot-btn--available {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-outline-variant);
+      color: var(--color-on-surface);
+    }
+    .slot-btn--selected {
+      background-color: var(--color-primary) !important;
+      border: 1px solid var(--color-primary) !important;
+      color: var(--color-on-primary) !important;
+    }
+    .slot-btn--disabled {
+      background-color: var(--color-surface-container) !important;
+      border: 1px solid transparent !important;
+      color: var(--color-on-surface-variant) !important;
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  </style>
+
+  <!-- 图片兜底 -->
+  <script>
+    document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (img.tagName !== 'IMG' || img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cat = img.getAttribute('data-category') || '其他';
+      const alt = img.getAttribute('alt') || '';
+      const label = esc(alt.length > 8 ? alt.slice(0, 8) + '…' : alt);
+      const icons = { '人物': '👤', '自然风景': '🏞', '动物': '🐾', '建筑城市': '🏙', '运动体育': '⚽', '交通工具': '🚗', '食物': '🍽', '服饰时尚': '👗', '商业科技': '💼', '游戏娱乐': '🎮', '艺术': '🎨', '其他': '🖼' };
+      const icon = icons[cat] || '🖼';
+      const w = img.width || 400, h = img.height || 300;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="45%" text-anchor="middle" font-size="${Math.min(w, h) * 0.18}" dominant-baseline="central">${icon}</text><text x="50%" y="68%" text-anchor="middle" font-size="${Math.min(w, h) * 0.07}" fill="%239ca3af" font-family="system-ui,sans-serif" dominant-baseline="central">${label}</text></svg>`;
+      img.src = 'data:image/svg+xml,' + svg;
+    }, true);
+  </script>
+</head>
+
+<body class="bg-background text-on-surface font-sans flex flex-col min-h-screen">
+
+  <!-- 顶部 Header（二级页，有返回按钮） -->
+  <header class="bg-background sticky top-0 z-40 h-14 flex items-center justify-between px-4">
+    <button id="header-back-btn" class="w-10 h-10 flex items-center justify-center text-on-surface-variant rounded-full hover:bg-surface-container active:bg-surface-container-high transition-colors">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <h1 id="header-title" class="text-base font-semibold text-on-surface">预约提交</h1>
+    <div class="w-10 h-10"></div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto pb-28">
+    <!-- @main-content:start -->
+
+    <!-- 已选服务信息卡片 -->
+    <section class="mx-4 mt-4">
+      <div id="service-card" class="bg-surface rounded-2xl shadow-card p-4 flex items-center gap-4">
+        <div class="w-16 h-16 bg-primary-container rounded-xl flex items-center justify-center flex-shrink-0">
+          <i data-lucide="scissors" class="w-7 h-7 text-primary"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p id="service-name" class="text-base font-semibold text-on-surface">经典剪发</p>
+          <p class="text-xs text-on-surface-variant mt-1">专业理发师 · 约45分钟</p>
+        </div>
+        <p id="service-price" class="text-lg font-bold text-primary flex-shrink-0">¥68</p>
+      </div>
+    </section>
+
+    <!-- 选择日期区域 -->
+    <section class="mt-6">
+      <h2 class="text-base font-semibold text-on-surface px-4 mb-3">选择日期</h2>
+      <div id="date-list" class="flex gap-2.5 px-4 overflow-x-auto" style="scrollbar-width: none; -webkit-overflow-scrolling: touch;">
+        <!-- 列表-日期1（默认选中） -->
+        <div class="date-card date-card--active flex flex-col items-center justify-center py-2.5 px-3 rounded-xl min-w-[52px] cursor-pointer transition-colors flex-shrink-0" data-date="0">
+          <span class="date-weekday text-xs font-medium text-on-primary">周一</span>
+          <span class="date-num text-base font-bold text-on-primary mt-0.5">16</span>
+        </div>
+        <!-- 列表-日期2 -->
+        <div class="date-card flex flex-col items-center justify-center py-2.5 px-3 rounded-xl min-w-[52px] cursor-pointer bg-surface transition-colors flex-shrink-0" data-date="1">
+          <span class="date-weekday text-xs font-medium text-on-surface-variant">周二</span>
+          <span class="date-num text-base font-bold text-on-surface mt-0.5">17</span>
+        </div>
+        <!-- 列表-日期3 -->
+        <div class="date-card flex flex-col items-center justify-center py-2.5 px-3 rounded-xl min-w-[52px] cursor-pointer bg-surface transition-colors flex-shrink-0" data-date="2">
+          <span class="date-weekday text-xs font-medium text-on-surface-variant">周三</span>
+          <span class="date-num text-base font-bold text-on-surface mt-0.5">18</span>
+        </div>
+        <!-- 列表-日期4 -->
+        <div class="date-card flex flex-col items-center justify-center py-2.5 px-3 rounded-xl min-w-[52px] cursor-pointer bg-surface transition-colors flex-shrink-0" data-date="3">
+          <span class="date-weekday text-xs font-medium text-on-surface-variant">周四</span>
+          <span class="date-num text-base font-bold text-on-surface mt-0.5">19</span>
+        </div>
+        <!-- 列表-日期5 -->
+        <div class="date-card flex flex-col items-center justify-center py-2.5 px-3 rounded-xl min-w-[52px] cursor-pointer bg-surface transition-colors flex-shrink-0" data-date="4">
+          <span class="date-weekday text-xs font-medium text-on-surface-variant">周五</span>
+          <span class="date-num text-base font-bold text-on-surface mt-0.5">20</span>
+        </div>
+        <!-- 列表-日期6 -->
+        <div class="date-card flex flex-col items-center justify-center py-2.5 px-3 rounded-xl min-w-[52px] cursor-pointer bg-surface transition-colors flex-shrink-0" data-date="5">
+          <span class="date-weekday text-xs font-medium text-on-surface-variant">周六</span>
+          <span class="date-num text-base font-bold text-on-surface mt-0.5">21</span>
+        </div>
+        <!-- 列表-日期7 -->
+        <div class="date-card flex flex-col items-center justify-center py-2.5 px-3 rounded-xl min-w-[52px] cursor-pointer bg-surface transition-colors flex-shrink-0" data-date="6">
+          <span class="date-weekday text-xs font-medium text-on-surface-variant">周日</span>
+          <span class="date-num text-base font-bold text-on-surface mt-0.5">22</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 选择时段区域 -->
+    <section class="mt-6">
+      <h2 class="text-base font-semibold text-on-surface px-4 mb-3">选择时段</h2>
+      <div id="time-slot-grid" class="grid grid-cols-4 gap-2.5 px-4">
+        <!-- 列表-时段1（可选） -->
+        <button class="slot-btn slot-btn--available rounded-xl text-sm font-medium py-2.5 transition-colors" data-slot="09:00" data-status="available">09:00</button>
+        <!-- 列表-时段2（可选） -->
+        <button class="slot-btn slot-btn--available rounded-xl text-sm font-medium py-2.5 transition-colors" data-slot="10:00" data-status="available">10:00</button>
+        <!-- 列表-时段3（已约满） -->
+        <button class="slot-btn slot-btn--disabled rounded-xl text-sm font-medium py-2.5" data-slot="11:00" data-status="disabled" disabled>11:00</button>
+        <!-- 列表-时段4（可选） -->
+        <button class="slot-btn slot-btn--available rounded-xl text-sm font-medium py-2.5 transition-colors" data-slot="12:00" data-status="available">12:00</button>
+        <!-- 列表-时段5（可选） -->
+        <button class="slot-btn slot-btn--available rounded-xl text-sm font-medium py-2.5 transition-colors" data-slot="13:00" data-status="available">13:00</button>
+        <!-- 列表-时段6（已约满） -->
+        <button class="slot-btn slot-btn--disabled rounded-xl text-sm font-medium py-2.5" data-slot="14:00" data-status="disabled" disabled>14:00</button>
+        <!-- 列表-时段7（可选） -->
+        <button class="slot-btn slot-btn--available rounded-xl text-sm font-medium py-2.5 transition-colors" data-slot="15:00" data-status="available">15:00</button>
+        <!-- 列表-时段8（可选） -->
+        <button class="slot-btn slot-btn--available rounded-xl text-sm font-medium py-2.5 transition-colors" data-slot="16:00" data-status="available">16:00</button>
+        <!-- 列表-时段9（已约满） -->
+        <button class="slot-btn slot-btn--disabled rounded-xl text-sm font-medium py-2.5" data-slot="17:00" data-status="disabled" disabled>17:00</button>
+        <!-- 列表-时段10（可选） -->
+        <button class="slot-btn slot-btn--available rounded-xl text-sm font-medium py-2.5 transition-colors" data-slot="18:00" data-status="available">18:00</button>
+      </div>
+    </section>
+
+    <!-- 联系人信息填写 -->
+    <section class="mt-6 px-4">
+      <h2 class="text-base font-semibold text-on-surface mb-3">联系人信息</h2>
+      <div class="space-y-3">
+        <div>
+          <label for="contact-name" class="text-sm text-on-surface-variant mb-1.5 block">姓名</label>
+          <input id="contact-name" type="text" placeholder="请输入姓名"
+                 class="w-full bg-surface-container border-none rounded-xl px-4 py-3 text-base
+                        text-on-surface placeholder:text-on-surface-variant/50
+                        focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors" />
+        </div>
+        <div>
+          <label for="contact-phone" class="text-sm text-on-surface-variant mb-1.5 block">手机号</label>
+          <input id="contact-phone" type="tel" placeholder="请输入手机号"
+                 class="w-full bg-surface-container border-none rounded-xl px-4 py-3 text-base
+                        text-on-surface placeholder:text-on-surface-variant/50
+                        focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors" />
+        </div>
+      </div>
+    </section>
+
+    <!-- @main-content:end -->
+  </main>
+
+  <!-- 底部固定确认预约按钮 -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 bg-surface px-4 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-outline-variant/10">
+    <button id="btn-confirm-booking" class="w-full bg-primary text-on-primary py-3.5 rounded-xl text-base font-semibold
+                                              hover:opacity-90 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2">
+      确认预约
+    </button>
+  </div>
+
+  <script>
+    // 导航辅助函数
+    function navPush(route) {
+      console.log('[原型演示] PUSH 到: ' + route);
+      window.location.href = route;
+    }
+
+    function navReplace(route) {
+      console.log('[原型演示] REPLACE 为: ' + route);
+      window.location.replace(route);
+    }
+
+    function navReset(route) {
+      console.log('[原型演示] RESET 到: ' + route);
+      window.location.href = route;
+    }
+
+    function navBack() {
+      console.log('[原型演示] BACK 返回上一页');
+      if (window.history.length > 1) window.history.back();
+    }
+
+    $(function () {
+      // 返回按钮
+      $('#header-back-btn').on('click', function () {
+        navBack();
+      });
+
+      // 日期选择
+      $('#date-list').on('click', '.date-card', function () {
+        // 移除所有选中态
+        $('.date-card').removeClass('date-card--active').addClass('bg-surface');
+        $('.date-card .date-weekday').removeClass('text-on-primary').addClass('text-on-surface-variant');
+        $('.date-card .date-num').removeClass('text-on-primary').addClass('text-on-surface');
+        // 设置当前选中
+        $(this).addClass('date-card--active').removeClass('bg-surface');
+        $(this).find('.date-weekday').removeClass('text-on-surface-variant').addClass('text-on-primary');
+        $(this).find('.date-num').removeClass('text-on-surface').addClass('text-on-primary');
+      });
+
+      // 时段选择（仅可选时段）
+      $('#time-slot-grid').on('click', '.slot-btn--available', function () {
+        // 移除其他选中态
+        $('.slot-btn--available').removeClass('slot-btn--selected');
+        // 设置当前选中
+        $(this).addClass('slot-btn--selected');
+      });
+
+      // 确认预约按钮
+      $('#btn-confirm-booking').on('click', function () {
+        navPush('booking-success.html');
+      });
+    });
+  </script>
+
+  <script>lucide.createIcons();</script>
+</body>
+
+</html>

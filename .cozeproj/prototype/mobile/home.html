@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* === 品牌色（橙色系，温暖亲和） === */
+      --color-primary:              #F97316;
+      --color-primary-container:    #FFF7ED;
+      --color-on-primary:           #ffffff;
+      /* === 背景 / 表面（M3 色调系统 + Apple HIG 呼吸感） === */
+      --color-background:                 #F9FAFB;
+      --color-surface-container-lowest:   #FFFFFF;
+      --color-surface:                    #FFFFFF;
+      --color-surface-container:          #F3F4F6;
+      --color-surface-container-high:     #E5E7EB;
+      --color-surface-container-highest:  #D1D5DB;
+      /* === 文字 === */
+      --color-on-surface:           #1F2433;
+      --color-on-surface-variant:   #6B7280;
+      /* === 功能色 === */
+      --color-success:  #22c55e;
+      --color-error:    #ef4444;
+      --color-warning:  #f59e0b;
+      /* === 边框 === */
+      --color-outline:          #374151;
+      --color-outline-variant:  #D1D5DB;
+      /* === 圆角 === */
+      --radius-sm:   0.375rem;
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-xl:   1rem;
+      --radius-2xl:  1.25rem;
+      --radius-full: 9999px;
+      /* === 阴影 === */
+      --shadow-card:   0 4px 12px rgba(0,0,0,0.06);
+      --shadow-float:  0 10px 25px rgba(0,0,0,0.08);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.12);
+      /* === 字体 === */
+      --font-sans: "Inter", "Noto Sans SC", system-ui, sans-serif;
+    }
+  </style>
+
+  <style>
+    body {
+      min-height: max(812px, 100dvh);
+      font-family: system-ui, sans-serif;
+    }
+    /* 分类标签激活态 */
+    .tag-btn.active {
+      background-color: var(--color-primary);
+      color: var(--color-on-primary);
+      border-color: transparent;
+    }
+  </style>
+
+  <!-- 图片兜底 -->
+  <script>
+    document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (img.tagName !== 'IMG' || img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cat = img.getAttribute('data-category') || '其他';
+      const alt = img.getAttribute('alt') || '';
+      const label = esc(alt.length > 8 ? alt.slice(0, 8) + '…' : alt);
+      const icons = { '人物': '👤', '自然风景': '🏞', '动物': '🐾', '建筑城市': '🏙', '运动体育': '⚽', '交通工具': '🚗', '食物': '🍽', '服饰时尚': '👗', '商业科技': '💼', '游戏娱乐': '🎮', '艺术': '🎨', '其他': '🖼' };
+      const icon = icons[cat] || '🖼';
+      const w = img.width || 400, h = img.height || 300;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="45%" text-anchor="middle" font-size="${Math.min(w, h) * 0.18}" dominant-baseline="central">${icon}</text><text x="50%" y="68%" text-anchor="middle" font-size="${Math.min(w, h) * 0.07}" fill="%239ca3af" font-family="system-ui,sans-serif" dominant-baseline="central">${label}</text></svg>`;
+      img.src = 'data:image/svg+xml,' + svg;
+    }, true);
+  </script>
+</head>
+
+<body class="bg-background text-on-surface font-sans flex flex-col min-h-screen">
+
+  <!-- @nav:start 导航组件 -->
+  <!-- 顶部 Header（一级页无返回按钮） -->
+  <header class="bg-background sticky top-0 z-40 h-14 flex items-center justify-between px-4">
+    <button id="header-back-btn" class="w-10 h-10 flex items-center justify-center text-on-surface-variant rounded-full hover:bg-surface-container active:bg-surface-container-high transition-colors" style="display:none;">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <h1 id="header-title" class="text-base font-semibold text-on-surface">预约服务</h1>
+    <div class="w-10 h-10"></div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
+    <!-- @main-content:start -->
+
+    <!-- 分类筛选标签栏 -->
+    <div id="category-bar" class="sticky top-14 z-30 bg-background px-4 pt-3 pb-2 flex gap-2">
+      <button id="tag-all" class="tag-btn active px-4 py-1.5 rounded-full text-sm font-medium border border-outline-variant/20 bg-surface text-on-surface-variant transition-all" data-category="all">全部</button>
+      <button id="tag-beauty" class="tag-btn px-4 py-1.5 rounded-full text-sm font-medium border border-outline-variant/20 bg-surface text-on-surface-variant transition-all" data-category="beauty">美业</button>
+      <button id="tag-fitness" class="tag-btn px-4 py-1.5 rounded-full text-sm font-medium border border-outline-variant/20 bg-surface text-on-surface-variant transition-all" data-category="fitness">健身</button>
+      <button id="tag-food" class="tag-btn px-4 py-1.5 rounded-full text-sm font-medium border border-outline-variant/20 bg-surface text-on-surface-variant transition-all" data-category="food">餐饮</button>
+    </div>
+
+    <!-- 服务项目卡片列表 -->
+    <div id="service-list" class="px-4 pt-2 flex flex-col gap-3">
+
+      <!-- 列表-美业-经典剪发 -->
+      <div class="service-card bg-surface rounded-2xl shadow-card p-3 flex gap-3" data-category="beauty" data-id="1">
+        <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=300&fit=crop" alt="经典剪发服务" data-category="服饰时尚" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+        <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <h3 class="text-base font-semibold text-on-surface truncate">经典剪发</h3>
+            <p class="text-xs text-on-surface-variant mt-1 truncate">资深发型师量身定制，打造专属造型</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-primary font-bold text-lg">¥68</span>
+            <button id="btn-book-1" class="bg-primary text-on-primary text-xs font-semibold px-4 py-1.5 rounded-xl hover:opacity-90 active:scale-[0.96] transition-all" data-id="1">预约</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表-美业-精致染发 -->
+      <div class="service-card bg-surface rounded-2xl shadow-card p-3 flex gap-3" data-category="beauty" data-id="2">
+        <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&h=300&fit=crop" alt="精致染发服务" data-category="服饰时尚" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+        <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <h3 class="text-base font-semibold text-on-surface truncate">精致染发</h3>
+            <p class="text-xs text-on-surface-variant mt-1 truncate">进口植物染剂，持久显色不伤发</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-primary font-bold text-lg">¥198</span>
+            <button id="btn-book-2" class="bg-primary text-on-primary text-xs font-semibold px-4 py-1.5 rounded-xl hover:opacity-90 active:scale-[0.96] transition-all" data-id="2">预约</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表-美业-深层护理 -->
+      <div class="service-card bg-surface rounded-2xl shadow-card p-3 flex gap-3" data-category="beauty" data-id="3">
+        <img src="https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=300&h=300&fit=crop" alt="深层护理服务" data-category="服饰时尚" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+        <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <h3 class="text-base font-semibold text-on-surface truncate">深层护理</h3>
+            <p class="text-xs text-on-surface-variant mt-1 truncate">修复受损发质，重现柔顺光泽</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-primary font-bold text-lg">¥128</span>
+            <button id="btn-book-3" class="bg-primary text-on-primary text-xs font-semibold px-4 py-1.5 rounded-xl hover:opacity-90 active:scale-[0.96] transition-all" data-id="3">预约</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表-健身-私教体验课 -->
+      <div class="service-card bg-surface rounded-2xl shadow-card p-3 flex gap-3" data-category="fitness" data-id="4">
+        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=300&h=300&fit=crop" alt="私教体验课" data-category="运动体育" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+        <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <h3 class="text-base font-semibold text-on-surface truncate">私教体验课</h3>
+            <p class="text-xs text-on-surface-variant mt-1 truncate">一对一指导，定制专属训练方案</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-primary font-bold text-lg">¥298</span>
+            <button id="btn-book-4" class="bg-primary text-on-primary text-xs font-semibold px-4 py-1.5 rounded-xl hover:opacity-90 active:scale-[0.96] transition-all" data-id="4">预约</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表-健身-瑜伽团课 -->
+      <div class="service-card bg-surface rounded-2xl shadow-card p-3 flex gap-3" data-category="fitness" data-id="5">
+        <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=300&h=300&fit=crop" alt="瑜伽团课" data-category="运动体育" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+        <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <h3 class="text-base font-semibold text-on-surface truncate">瑜伽团课</h3>
+            <p class="text-xs text-on-surface-variant mt-1 truncate">小班教学，放松身心提升柔韧</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-primary font-bold text-lg">¥88</span>
+            <button id="btn-book-5" class="bg-primary text-on-primary text-xs font-semibold px-4 py-1.5 rounded-xl hover:opacity-90 active:scale-[0.96] transition-all" data-id="5">预约</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表-健身-搏击训练 -->
+      <div class="service-card bg-surface rounded-2xl shadow-card p-3 flex gap-3" data-category="fitness" data-id="6">
+        <img src="https://images.unsplash.com/photo-1555597673-b21d5c935865?w=300&h=300&fit=crop" alt="搏击训练" data-category="运动体育" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+        <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <h3 class="text-base font-semibold text-on-surface truncate">搏击训练</h3>
+            <p class="text-xs text-on-surface-variant mt-1 truncate">燃脂塑形，释放压力提升体能</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-primary font-bold text-lg">¥158</span>
+            <button id="btn-book-6" class="bg-primary text-on-primary text-xs font-semibold px-4 py-1.5 rounded-xl hover:opacity-90 active:scale-[0.96] transition-all" data-id="6">预约</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表-餐饮-精品套餐 -->
+      <div class="service-card bg-surface rounded-2xl shadow-card p-3 flex gap-3" data-category="food" data-id="7">
+        <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=300&fit=crop" alt="精品套餐" data-category="食物" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+        <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <h3 class="text-base font-semibold text-on-surface truncate">精品套餐</h3>
+            <p class="text-xs text-on-surface-variant mt-1 truncate">主厨推荐搭配，营养均衡精致美味</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-primary font-bold text-lg">¥128</span>
+            <button id="btn-book-7" class="bg-primary text-on-primary text-xs font-semibold px-4 py-1.5 rounded-xl hover:opacity-90 active:scale-[0.96] transition-all" data-id="7">预约</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表-餐饮-下午茶套餐 -->
+      <div class="service-card bg-surface rounded-2xl shadow-card p-3 flex gap-3" data-category="food" data-id="8">
+        <img src="https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=300&h=300&fit=crop" alt="下午茶套餐" data-category="食物" class="w-24 h-24 rounded-xl object-cover flex-shrink-0" />
+        <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <h3 class="text-base font-semibold text-on-surface truncate">下午茶套餐</h3>
+            <p class="text-xs text-on-surface-variant mt-1 truncate">甜品饮品搭配，尽享悠闲午后时光</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-primary font-bold text-lg">¥58</span>
+            <button id="btn-book-8" class="bg-primary text-on-primary text-xs font-semibold px-4 py-1.5 rounded-xl hover:opacity-90 active:scale-[0.96] transition-all" data-id="8">预约</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部留白 -->
+      <div class="h-2"></div>
+
+    </div>
+
+    <!-- @main-content:end -->
+  </main>
+
+  <!-- 底部 TabBar（一级页专用） -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-surface flex justify-around items-center h-14 pb-[env(safe-area-inset-bottom)] border-t border-outline-variant/10">
+    <a href="home.html" id="nav-home" class="tab-item flex flex-col items-center gap-0.5 px-5 py-1.5 text-primary" aria-current="page">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold tracking-wide">首页</span>
+    </a>
+    <a href="appointments.html" id="nav-appointments" class="tab-item flex flex-col items-center gap-0.5 px-5 py-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
+      <i data-lucide="calendar-check" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold tracking-wide">预约</span>
+    </a>
+    <a href="profile.html" id="nav-profile" class="tab-item flex flex-col items-center gap-0.5 px-5 py-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
+      <i data-lucide="user" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold tracking-wide">我的</span>
+    </a>
+  </nav>
+  <!-- @nav:end -->
+
+  <script>lucide.createIcons();</script>
+
+  <script>
+    // 导航辅助函数
+    function navPush(route) {
+      console.log(`[原型演示] PUSH 到: ${route}`);
+      window.location.href = route;
+    }
+    function navReplace(route) {
+      console.log(`[原型演示] REPLACE 为: ${route}`);
+      window.location.replace(route);
+    }
+    function navReset(route) {
+      console.log(`[原型演示] RESET 到: ${route}`);
+      window.location.href = route;
+    }
+    function navBack() {
+      console.log(`[原型演示] BACK 返回上一页`);
+      if (window.history.length > 1) window.history.back();
+    }
+
+    $(function () {
+      // === 分类标签切换 ===
+      $('#category-bar').on('click', '.tag-btn', function () {
+        var category = $(this).data('category');
+
+        // 更新标签激活态
+        $('.tag-btn').removeClass('active');
+        $(this).addClass('active');
+
+        // 筛选卡片显示/隐藏
+        if (category === 'all') {
+          $('.service-card').show();
+        } else {
+          $('.service-card').hide();
+          $('.service-card[data-category="' + category + '"]').show();
+        }
+      });
+
+      // === 预约按钮 - 跳转到服务详情页 ===
+      $('#service-list').on('click', '.service-card button[id^="btn-book-"]', function (e) {
+        e.stopPropagation();
+        var serviceId = $(this).data('id');
+        navPush('service-detail.html?id=' + serviceId);
+      });
+
+      // === 卡片点击 - 跳转到服务详情页 ===
+      $('#service-list').on('click', '.service-card', function () {
+        var serviceId = $(this).data('id');
+        navPush('service-detail.html?id=' + serviceId);
+      });
+
+      // === TabBar 导航 ===
+      $('#nav-home').on('click', function (e) {
+        e.preventDefault();
+        navReset('home.html');
+      });
+      $('#nav-appointments').on('click', function (e) {
+        e.preventDefault();
+        navReset('appointments.html');
+      });
+      $('#nav-profile').on('click', function (e) {
+        e.preventDefault();
+        navReset('profile.html');
+      });
+    });
+  </script>
+</body>
+
+</html>

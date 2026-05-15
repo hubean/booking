@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* === 品牌色（橙色系，温暖亲和） === */
+      --color-primary:              #F97316;
+      --color-primary-container:    #FFF7ED;
+      --color-on-primary:           #ffffff;
+      /* === 背景 / 表面（M3 色调系统 + Apple HIG 呼吸感） === */
+      --color-background:                 #F9FAFB;
+      --color-surface-container-lowest:   #FFFFFF;
+      --color-surface:                    #FFFFFF;
+      --color-surface-container:          #F3F4F6;
+      --color-surface-container-high:     #E5E7EB;
+      --color-surface-container-highest:  #D1D5DB;
+      /* === 文字 === */
+      --color-on-surface:           #1F2433;
+      --color-on-surface-variant:   #6B7280;
+      /* === 功能色 === */
+      --color-success:  #22c55e;
+      --color-error:    #ef4444;
+      --color-warning:  #f59e0b;
+      /* === 边框 === */
+      --color-outline:          #374151;
+      --color-outline-variant:  #D1D5DB;
+      /* === 圆角 === */
+      --radius-sm:   0.375rem;
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-xl:   1rem;
+      --radius-2xl:  1.25rem;
+      --radius-full: 9999px;
+      /* === 阴影 === */
+      --shadow-card:   0 4px 12px rgba(0,0,0,0.06);
+      --shadow-float:  0 10px 25px rgba(0,0,0,0.08);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.12);
+      /* === 字体 === */
+      --font-sans: "Inter", "Noto Sans SC", system-ui, sans-serif;
+    }
+  </style>
+
+  <style>
+    body {
+      min-height: max(812px, 100dvh);
+      font-family: system-ui, sans-serif;
+    }
+  </style>
+
+  <!-- 图片兜底 -->
+  <script>
+    document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (img.tagName !== 'IMG' || img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cat = img.getAttribute('data-category') || '其他';
+      const alt = img.getAttribute('alt') || '';
+      const label = esc(alt.length > 8 ? alt.slice(0, 8) + '…' : alt);
+      const icons = { '人物': '👤', '自然风景': '🏞', '动物': '🐾', '建筑城市': '🏙', '运动体育': '⚽', '交通工具': '🚗', '食物': '🍽', '服饰时尚': '👗', '商业科技': '💼', '游戏娱乐': '🎮', '艺术': '🎨', '其他': '🖼' };
+      const icon = icons[cat] || '🖼';
+      const w = img.width || 400, h = img.height || 300;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="45%" text-anchor="middle" font-size="${Math.min(w, h) * 0.18}" dominant-baseline="central">${icon}</text><text x="50%" y="68%" text-anchor="middle" font-size="${Math.min(w, h) * 0.07}" fill="%239ca3af" font-family="system-ui,sans-serif" dominant-baseline="central">${label}</text></svg>`;
+      img.src = 'data:image/svg+xml,' + svg;
+    }, true);
+  </script>
+</head>
+
+<body class="bg-background text-on-surface font-sans flex flex-col min-h-screen">
+
+  <!-- @nav:start 导航组件，不需要的页面则不要复制此段（从 @nav:start 到 @nav:end） -->
+  <!-- 顶部 Header（一级页无返回按钮，二级页有返回按钮） -->
+  <header class="bg-background sticky top-0 z-40 h-14 flex items-center justify-between px-4">
+    <button id="header-back-btn" class="w-10 h-10 flex items-center justify-center text-on-surface-variant rounded-full hover:bg-surface-container active:bg-surface-container-high transition-colors" style="display:none;">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <h1 id="header-title" class="text-base font-semibold text-on-surface">我的</h1>
+    <div class="w-10 h-10"></div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
+    <!-- @main-content:start -->
+
+    <!-- 用户信息区 -->
+    <section class="px-4 pt-6 pb-2">
+      <div class="flex items-center gap-4">
+        <!-- 圆形头像（内含"初"字） -->
+        <div id="user-avatar" class="w-16 h-16 rounded-full bg-primary flex items-center justify-center shrink-0">
+          <span class="text-2xl font-bold text-on-primary">初</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <h2 id="user-nickname" class="text-xl font-bold text-on-surface">小初</h2>
+          <p id="user-phone" class="text-sm text-on-surface-variant">138****0000</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 预约统计卡片 -->
+    <section class="px-4 mt-4">
+      <div id="stats-card" class="bg-surface rounded-2xl shadow-card p-4">
+        <div class="flex items-center">
+          <!-- 统计项-总预约 -->
+          <div id="stat-total" class="flex-1 flex flex-col items-center gap-1 py-2">
+            <span class="text-2xl font-bold text-primary">8</span>
+            <span class="text-sm text-on-surface-variant">总预约</span>
+          </div>
+          <!-- 分隔线 -->
+          <div class="w-px h-10 bg-outline-variant/20"></div>
+          <!-- 统计项-待服务 -->
+          <div id="stat-pending" class="flex-1 flex flex-col items-center gap-1 py-2">
+            <span class="text-2xl font-bold text-primary">2</span>
+            <span class="text-sm text-on-surface-variant">待服务</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 功能菜单列表 -->
+    <section class="mt-6">
+      <div class="bg-surface rounded-2xl mx-4 overflow-hidden">
+        <!-- 菜单项-我的预约 -->
+        <a href="appointments.html" id="menu-appointments" class="flex items-center px-4 py-4 bg-surface hover:bg-surface-container active:bg-surface-container-high transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <i data-lucide="calendar" class="w-5 h-5 text-primary"></i>
+          </div>
+          <span class="flex-1 ml-3 text-base font-medium text-on-surface">我的预约</span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-on-surface-variant/50"></i>
+        </a>
+
+        <!-- 分隔线 -->
+        <div class="mx-4 border-t border-outline-variant/10"></div>
+
+        <!-- 菜单项-联系客服 -->
+        <a href="#" id="menu-contact" class="flex items-center px-4 py-4 bg-surface hover:bg-surface-container active:bg-surface-container-high transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+            <i data-lucide="phone" class="w-5 h-5 text-success"></i>
+          </div>
+          <span class="flex-1 ml-3 text-base font-medium text-on-surface">联系客服</span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-on-surface-variant/50"></i>
+        </a>
+
+        <!-- 分隔线 -->
+        <div class="mx-4 border-t border-outline-variant/10"></div>
+
+        <!-- 菜单项-关于我们 -->
+        <a href="#" id="menu-about" class="flex items-center px-4 py-4 bg-surface hover:bg-surface-container active:bg-surface-container-high transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <i data-lucide="info" class="w-5 h-5 text-primary"></i>
+          </div>
+          <span class="flex-1 ml-3 text-base font-medium text-on-surface">关于我们</span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-on-surface-variant/50"></i>
+        </a>
+
+        <!-- 分隔线 -->
+        <div class="mx-4 border-t border-outline-variant/10"></div>
+
+        <!-- 菜单项-设置 -->
+        <a href="#" id="menu-settings" class="flex items-center px-4 py-4 bg-surface hover:bg-surface-container active:bg-surface-container-high transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-on-surface-variant/10 flex items-center justify-center shrink-0">
+            <i data-lucide="settings" class="w-5 h-5 text-on-surface-variant"></i>
+          </div>
+          <span class="flex-1 ml-3 text-base font-medium text-on-surface">设置</span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-on-surface-variant/50"></i>
+        </a>
+      </div>
+    </section>
+
+    <!-- @main-content:end -->
+  </main>
+
+  <!-- 底部 TabBar（一级页专用，二级页不复制此段） -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-surface flex justify-around items-center h-14 pb-[env(safe-area-inset-bottom)] border-t border-outline-variant/10">
+    <a href="home.html" class="tab-item flex flex-col items-center gap-0.5 px-5 py-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold tracking-wide">首页</span>
+    </a>
+    <a href="appointments.html" class="tab-item flex flex-col items-center gap-0.5 px-5 py-1.5 text-on-surface-variant hover:text-on-surface transition-colors">
+      <i data-lucide="calendar-check" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold tracking-wide">预约</span>
+    </a>
+    <a href="profile.html" class="tab-item flex flex-col items-center gap-0.5 px-5 py-1.5 text-primary" aria-current="page">
+      <i data-lucide="user" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold tracking-wide">我的</span>
+    </a>
+  </nav>
+  <!-- @nav:end 导航组件，不需要的页面则不要复制此段 -->
+
+  <script>lucide.createIcons();</script>
+
+  <script>
+    // 导航辅助函数
+    function navPush(route) {
+      console.log(`[原型演示] PUSH 到: ${route}`);
+      window.location.href = route;
+    }
+
+    function navReplace(route) {
+      console.log(`[原型演示] REPLACE 为: ${route}`);
+      window.location.replace(route);
+    }
+
+    function navReset(route) {
+      console.log(`[原型演示] RESET 到: ${route}`);
+      window.location.href = route;
+    }
+
+    function navBack() {
+      console.log('[原型演示] BACK 返回上一页');
+      if (window.history.length > 1) window.history.back();
+    }
+
+    $(function () {
+      // TabBar 导航 - 使用 navReset 切换一级页
+      $('.tab-item').on('click', function (e) {
+        e.preventDefault();
+        const href = $(this).attr('href');
+        if (href && href !== '#') {
+          navReset(href);
+        }
+      });
+
+      // 联系客服 - 需要调用第三方接口实现客服功能
+      // 后续应实现：1. 拨打客服电话 400-xxx-xxxx；2. 或跳转在线客服聊天页面
+      $('#menu-contact').on('click', function (e) {
+        e.preventDefault();
+        console.log('需要调用第三方接口实现联系客服功能');
+      });
+
+      // 关于我们 - 跳转关于我们页面
+      // 后续应实现：跳转至关于我们详情页，展示应用版本、公司信息、用户协议、隐私政策等
+      $('#menu-about').on('click', function (e) {
+        e.preventDefault();
+        console.log('跳转关于我们页面');
+      });
+
+      // 设置 - 跳转设置页面
+      // 后续应实现：跳转至设置页面，包含通知开关、清除缓存、退出登录等功能
+      $('#menu-settings').on('click', function (e) {
+        e.preventDefault();
+        console.log('跳转设置页面');
+      });
+
+      // 预约统计卡片点击 - 跳转到预约记录页
+      $('#stat-total').on('click', function () {
+        navReset('appointments.html');
+      });
+
+      $('#stat-pending').on('click', function () {
+        navReset('appointments.html');
+      });
+    });
+  </script>
+</body>
+
+</html>

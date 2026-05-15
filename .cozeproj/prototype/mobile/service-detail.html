@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* === 品牌色（橙色系，温暖亲和） === */
+      --color-primary:              #F97316;
+      --color-primary-container:    #FFF7ED;
+      --color-on-primary:           #ffffff;
+      /* === 背景 / 表面（M3 色调系统 + Apple HIG 呼吸感） === */
+      --color-background:                 #F9FAFB;
+      --color-surface-container-lowest:   #FFFFFF;
+      --color-surface:                    #FFFFFF;
+      --color-surface-container:          #F3F4F6;
+      --color-surface-container-high:     #E5E7EB;
+      --color-surface-container-highest:  #D1D5DB;
+      /* === 文字 === */
+      --color-on-surface:           #1F2433;
+      --color-on-surface-variant:   #6B7280;
+      /* === 功能色 === */
+      --color-success:  #22c55e;
+      --color-error:    #ef4444;
+      --color-warning:  #f59e0b;
+      /* === 边框 === */
+      --color-outline:          #374151;
+      --color-outline-variant:  #D1D5DB;
+      /* === 圆角 === */
+      --radius-sm:   0.375rem;
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-xl:   1rem;
+      --radius-2xl:  1.25rem;
+      --radius-full: 9999px;
+      /* === 阴影 === */
+      --shadow-card:   0 4px 12px rgba(0,0,0,0.06);
+      --shadow-float:  0 10px 25px rgba(0,0,0,0.08);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.12);
+      /* === 字体 === */
+      --font-sans: "Inter", "Noto Sans SC", system-ui, sans-serif;
+    }
+  </style>
+
+  <style>
+    body {
+      min-height: max(812px, 100dvh);
+      font-family: system-ui, sans-serif;
+    }
+  </style>
+
+  <!-- 图片兜底 -->
+  <script>
+    document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (img.tagName !== 'IMG' || img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cat = img.getAttribute('data-category') || '其他';
+      const alt = img.getAttribute('alt') || '';
+      const label = esc(alt.length > 8 ? alt.slice(0, 8) + '…' : alt);
+      const icons = { '人物': '👤', '自然风景': '🏞', '动物': '🐾', '建筑城市': '🏙', '运动体育': '⚽', '交通工具': '🚗', '食物': '🍽', '服饰时尚': '👗', '商业科技': '💼', '游戏娱乐': '🎮', '艺术': '🎨', '其他': '🖼' };
+      const icon = icons[cat] || '🖼';
+      const w = img.width || 400, h = img.height || 300;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="45%" text-anchor="middle" font-size="${Math.min(w, h) * 0.18}" dominant-baseline="central">${icon}</text><text x="50%" y="68%" text-anchor="middle" font-size="${Math.min(w, h) * 0.07}" fill="%239ca3af" font-family="system-ui,sans-serif" dominant-baseline="central">${label}</text></svg>`;
+      img.src = 'data:image/svg+xml,' + svg;
+    }, true);
+  </script>
+</head>
+
+<body class="bg-background text-on-surface font-sans flex flex-col min-h-screen">
+
+  <!-- 顶部 Header（二级页，有返回按钮） -->
+  <header class="bg-background sticky top-0 z-40 h-14 flex items-center justify-between px-4">
+    <button id="header-back-btn" class="w-10 h-10 flex items-center justify-center text-on-surface-variant rounded-full hover:bg-surface-container active:bg-surface-container-high transition-colors">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <h1 id="header-title" class="text-base font-semibold text-on-surface">服务详情</h1>
+    <div class="w-10 h-10"></div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto pb-24">
+    <!-- @main-content:start -->
+
+    <!-- 服务封面大图 -->
+    <div class="px-4 pt-2">
+      <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=500&fit=crop"
+           alt="经典剪发服务封面"
+           data-category="服饰时尚"
+           class="w-full h-56 object-cover rounded-2xl" />
+    </div>
+
+    <!-- 服务基本信息区 -->
+    <div class="px-4 pt-5">
+      <!-- 服务名称 -->
+      <h2 id="service-name" class="text-xl font-bold text-on-surface">经典剪发</h2>
+
+      <!-- 价格 + 时长标签 -->
+      <div class="flex items-center gap-3 mt-3">
+        <span id="service-price" class="text-xl font-bold text-primary">¥68</span>
+        <span id="service-duration" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container text-on-surface-variant">
+          <i data-lucide="clock" class="w-3 h-3 mr-1"></i>60分钟
+        </span>
+      </div>
+    </div>
+
+    <!-- 分隔区域 -->
+    <div class="h-px bg-outline-variant/10 mx-4 my-6"></div>
+
+    <!-- 服务详细描述 -->
+    <div class="px-4 pb-6">
+      <h3 class="text-base font-semibold text-on-surface mb-3">服务详情</h3>
+
+      <div class="space-y-4 text-sm text-on-surface leading-relaxed">
+        <!-- 描述段落1-服务简介 -->
+        <p>经典剪发是我们的招牌服务，由资深发型师根据您的脸型、发质和个人风格，为您量身定制最适合的发型。无论是日常通勤造型还是出席重要场合，都能让您焕然一新。</p>
+
+        <!-- 描述段落2-服务流程 -->
+        <p>
+          <span class="font-semibold text-on-surface">服务流程：</span><br/>
+          1. 专业发型师一对一咨询，了解您的需求和偏好；<br/>
+          2. 根据脸型、发质提供专业建议；<br/>
+          3. 精细剪裁，打造理想发型；<br/>
+          4. 造型定型，确保效果持久；<br/>
+          5. 日常打理建议和护理指导。
+        </p>
+
+        <!-- 描述段落3-适用人群 -->
+        <p>
+          <span class="font-semibold text-on-surface">适用人群：</span><br/>
+          适合所有发质和脸型的男士及女士，特别推荐想要换个新形象或需要定期修剪保养的朋友。
+        </p>
+
+        <!-- 描述段落4-注意事项 -->
+        <p>
+          <span class="font-semibold text-on-surface">温馨提示：</span><br/>
+          · 预约后如需取消，请至少提前2小时操作；<br/>
+          · 建议提前10分钟到店，以便充分沟通需求；<br/>
+          · 如有特殊需求（如烫染后修剪），请提前备注说明；<br/>
+          · 服务包含一次洗发和吹干造型。
+        </p>
+      </div>
+    </div>
+
+    <!-- @main-content:end -->
+  </main>
+
+  <!-- 底部固定"立即预约"按钮 -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 bg-surface px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t border-outline-variant/10">
+    <button id="btn-book-now" class="w-full bg-primary text-on-primary py-3.5 rounded-xl text-base font-semibold hover:opacity-90 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2">
+      <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+      立即预约
+    </button>
+  </div>
+
+  <script>lucide.createIcons();</script>
+
+  <script>
+    // 导航辅助函数
+    function navPush(route) {
+      console.log(`[原型演示] PUSH 到: ${route}`);
+      window.location.href = route;
+    }
+
+    function navReplace(route) {
+      console.log(`[原型演示] REPLACE 为: ${route}`);
+      window.location.replace(route);
+    }
+
+    function navReset(route) {
+      console.log(`[原型演示] RESET 到: ${route}`);
+      window.location.href = route;
+    }
+
+    function navBack() {
+      console.log(`[原型演示] BACK 返回上一页`);
+      if (window.history.length > 1) window.history.back();
+    }
+
+    $(function () {
+      // 返回按钮 - 点击返回上一页
+      $('#header-back-btn').on('click', function () {
+        navBack();
+      });
+
+      // 立即预约按钮 - 点击跳转到预约页面，携带服务ID参数
+      $('#btn-book-now').on('click', function () {
+        navPush('booking.html?service_id=1');
+      });
+    });
+  </script>
+</body>
+
+</html>
