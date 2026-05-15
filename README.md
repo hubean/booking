@@ -1,763 +1,261 @@
-# Coze Mini Program
+# 预约服务小程序 - 项目文档
 
-这是一个基于 [Taro 4](https://docs.taro.zone/docs/) + [Nest.js](https://nestjs.com/) 的前后端分离项目，由扣子编程 CLI 创建。
+## 1. 项目概述
 
-## 技术栈
+基于 Taro 框架开发的预约服务小程序，面向美业、健身、餐饮等服务型商家提供线上预约解决方案。包含**小程序端**（C端用户预约）和**管理后台**（B端商家管理）两部分。
 
-- **整体框架**: Taro 4.1.9
-- **语言**: TypeScript 5.4.5
-- **渲染**: React 18.0.0
-- **样式**: TailwindCSS 4.1.18
-- **Tailwind 适配层**: weapp-tailwindcss 4.9.2
-- **状态管理**: Zustand 5.0.9
-- **图标库**: lucide-react-taro latest
-- **工程化**: Vite 4.2.0
-- **包管理**: pnpm
-- **运行时**: Node.js >= 18
-- **服务端**: NestJS 10.4.15
-- **数据库 ORM**: Drizzle ORM 0.45.1
-- **类型校验**: Zod 4.3.5
+### 技术栈
 
-## 项目结构
+| 层级 | 技术 | 说明 |
+|------|------|------|
+| 前端框架 | Taro + React | 跨端小程序 + H5 |
+| 样式 | Tailwind CSS 4 + weapp-tailwindcss | 原子化样式，跨端适配 |
+| UI 组件库 | shadcn/ui (Taro版) | `@/components/ui/*` |
+| 图标 | lucide-react-taro | Taro 适配版 Lucide 图标 |
+| 后端框架 | NestJS | RESTful API |
+| ORM | Drizzle ORM | 轻量 TypeScript ORM |
+| 数据库 | SQLite (better-sqlite3) | 零配置文件级存储 |
+| 认证 | JWT + Passport | 管理后台身份验证 |
+| 密码加密 | bcryptjs | 安全哈希存储 |
+
+---
+
+## 2. 页面结构
+
+### 2.1 小程序端（6个页面）
+
+| 页面 | 路径 | 类型 | 功能 |
+|------|------|------|------|
+| 首页 | `/pages/index/index` | TabBar | 分类筛选 + 服务卡片列表 + 搜索 |
+| 预约记录 | `/pages/appointments/index` | TabBar | Tab 状态筛选 + 预约列表 + 取消预约 |
+| 我的 | `/pages/profile/index` | TabBar | 用户信息 + 预约统计 + 编辑昵称/电话 + 管理后台入口 |
+| 服务详情 | `/pages/service-detail/index` | 二级页 | 封面大图 + 服务信息 + 立即预约 |
+| 预约提交 | `/pages/booking/index` | 二级页 | 选日期 + 选时段 + 联系信息 + 确认提交 |
+| 预约成功 | `/pages/booking-success/index` | 二级页 | 成功图标 + 预约摘要 + 操作按钮 |
+
+### 2.2 管理后台（5个页面）
+
+| 页面 | 路径 | 功能 |
+|------|------|------|
+| 登录 | `/pages/admin/login/index` | 用户名 + 密码登录，首次登录强制改密码 |
+| 仪表盘 | `/pages/admin/dashboard/index` | 预约统计 + 修改密码弹窗 |
+| 服务管理 | `/pages/admin/services/index` | 新增 / 编辑 / 删除服务项目 |
+| 预约管理 | `/pages/admin/appointments/index` | 查看预约列表 + 修改预约状态 |
+| 用户管理 | `/pages/admin/users/index` | 新增 / 删除管理员用户 |
+
+### 2.3 TabBar 配置
+
+3 个一级页面：首页（House）、预约（Calendar）、我的（User），橙色选中态。
+
+---
+
+## 3. 后端 API
+
+### 3.1 公开接口（小程序端，无需认证）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/services` | 服务列表（支持 `category` 筛选） |
+| GET | `/api/services/:id` | 服务详情 |
+| GET | `/api/time-slots` | 可用时段查询（`serviceId` + `date`） |
+| POST | `/api/appointments` | 创建预约 |
+| GET | `/api/appointments` | 预约列表（支持 `status` 筛选） |
+| PUT | `/api/appointments/:id/cancel` | 取消预约 |
+
+### 3.2 认证接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/auth/login` | 登录（返回 JWT + mustChangePassword） |
+| GET | `/api/auth/profile` | 获取当前用户信息 |
+| PUT | `/api/auth/change-password` | 修改密码 |
+
+### 3.3 管理接口（需 JWT + admin 角色）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/users` | 用户列表 |
+| POST | `/api/users` | 新增用户 |
+| DELETE | `/api/users/:id` | 删除用户 |
+| POST | `/api/services` | 新增服务 |
+| PUT | `/api/services/:id` | 更新服务 |
+| DELETE | `/api/services/:id` | 删除服务 |
+| GET | `/api/appointments/admin/list` | 管理端预约列表 |
+| PUT | `/api/appointments/admin/:id/status` | 修改预约状态 |
+
+---
+
+## 4. 数据库设计
+
+### 4.1 services 表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER PK | 自增主键 |
+| name | TEXT | 服务名称 |
+| description | TEXT | 服务描述 |
+| price | INTEGER | 价格（分） |
+| duration | INTEGER | 时长（分钟） |
+| image_url | TEXT | 封面图 URL |
+| category | TEXT | 分类（beauty/fitness/food） |
+| created_at | TEXT | 创建时间 |
+
+### 4.2 appointments 表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER PK | 自增主键 |
+| service_id | INTEGER FK | 关联服务 |
+| appointment_date | TEXT | 预约日期 |
+| time_slot | TEXT | 预约时段 |
+| contact_name | TEXT | 联系人姓名 |
+| contact_phone | TEXT | 联系人电话 |
+| status | TEXT | 状态（pending/completed/cancelled） |
+| created_at | TEXT | 创建时间 |
+
+### 4.3 users 表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER PK | 自增主键 |
+| username | TEXT UNIQUE | 用户名 |
+| password | TEXT | bcrypt 加密密码 |
+| role | TEXT | 角色（admin/user） |
+| must_change_password | INTEGER | 是否需要修改密码（0/1） |
+| created_at | TEXT | 创建时间 |
+
+### 4.4 种子数据
+
+- 8 个预设服务项目（美业3 + 健身3 + 餐饮2）
+- 1 个默认管理员账号：`admin / admin`（首次登录需改密码）
+
+---
+
+## 5. 核心业务流程
+
+### 5.1 用户预约流程
 
 ```
-├── .cozeproj/                # Coze 平台配置
-│   └── scripts/              # 构建和运行脚本
-├── config/                   # Taro 构建配置
-│   ├── index.ts              # 主配置文件
-│   ├── dev.ts                # 开发环境配置
-│   └── prod.ts               # 生产环境配置
-├── server/                   # NestJS 后端服务
-│   └── src/
-│       ├── main.ts           # 服务入口
-│       ├── app.module.ts     # 根模块
-│       ├── app.controller.ts # 应用控制器
-│       └── app.service.ts    # 应用服务
-├── src/                      # 前端源码
-│   ├── pages/                # 页面组件
-│   ├── presets/              # 框架预置逻辑（无需读取，如无必要不改动）
-│   ├── utils/                # 工具函数
-│   ├── network.ts            # 封装好的网络请求工具
-│   ├── app.ts                # 应用入口
-│   ├── app.config.ts         # 应用配置
-│   └── app.css               # 全局样式
-├── types/                    # TypeScript 类型定义
-├── key/                      # 小程序密钥（CI 上传用）
-├── .env.local                # 环境变量
-└── project.config.json       # 微信小程序项目配置
+首页(浏览服务) → 服务详情(查看) → 预约提交(选日期+时段)
+  → POST /api/appointments → 后端校验(日期/时段/防重复)
+  → 预约成功页(展示摘要)
+  → 预约记录Tab(可查看/取消)
+  → 取消时触发事件 → 我的页面统计刷新
 ```
 
-## 快速开始
+### 5.2 用户信息流程
 
-### 安装依赖
+- 新用户首次进入【我的】页面，昵称和电话显示"请输入"提示
+- 点击弹出输入弹窗，填写后保存到本地 Storage
+- 电话保存后不可修改，显示脱敏号码 + 锁图标
+- 预约提交页自动带入用户昵称和电话，联系信息不可编辑
+- 未完善联系信息时点击"立即预约"提示先去【我的】页面完善
+
+### 5.3 管理后台流程
+
+```
+登录(admin/admin) → 首次登录强制修改密码 → 仪表盘
+  → 服务管理(CRUD)
+  → 预约管理(查看/修改状态)
+  → 用户管理(新增/删除)
+```
+
+---
+
+## 6. 安全机制
+
+- **JWT 认证**：管理后台所有接口需携带 Bearer Token
+- **全局 Guard**：JwtAuthGuard 全局生效，小程序端接口 @Public() 放行
+- **角色守卫**：@Roles('admin') 限制管理接口仅管理员可访问
+- **密码加密**：bcryptjs 哈希存储，永不存明文
+- **默认密码**：admin 首次登录 mustChangePassword=true，强制修改
+- **登录校验**：前端 useAuthGuard Hook，未登录自动跳转登录页
+
+---
+
+## 7. 跨端适配
+
+- 平台检测：`Taro.getEnv()` 判断 WEAPP/TT/H5
+- TabBar 图标：本地 PNG（小程序强制要求），`npx taro-lucide-tabbar` 生成
+- 样式：Tailwind 预设类名优先，禁止硬编码 px
+- Text 换行：垂直排列的 Text 加 `block` 类
+- Input 样式：View 包裹，样式放外层
+- Fixed + Flex：使用 inline style，H5 端 Tailwind 失效
+- 跨页面通信：Taro.eventCenter 事件机制
+
+---
+
+## 8. 本地开发
 
 ```bash
+# 安装依赖
 pnpm install
+
+# 启动开发环境（前端5000 + 后端3000）
+coze dev
+
+# 校验代码
+pnpm validate
+
+# 编译构建
+pnpm build
+
+# 重置数据库
+rm -f server/data/appointment.db
 ```
 
-### 本地开发
+### 默认账号
 
-同时启动 H5 前端和 NestJS 后端：
+| 系统 | 用户名 | 密码 | 说明 |
+|------|--------|------|------|
+| 管理后台 | admin | admin | 首次登录强制修改密码 |
 
-```bash
-pnpm dev
+---
+
+## 9. 文件结构
+
 ```
-
-- 前端地址：http://localhost:5000
-- 后端地址：http://localhost:3000
-
-单独启动：
-
-```bash
-pnpm dev:web      # 仅 H5 前端
-pnpm dev:weapp    # 仅微信小程序
-pnpm dev:server   # 仅后端服务
-```
-
-### 构建
-
-```bash
-pnpm build        # 构建所有（H5 + 小程序 + 后端）
-pnpm build:web    # 仅构建 H5，输出到 dist-web
-pnpm build:weapp  # 仅构建微信小程序，输出到 dist
-pnpm build:server # 仅构建后端
-```
-
-### 预览小程序
-
-```bash
-pnpm preview:weapp # 构建并生成预览小程序二维码
-```
-
-## 前端核心开发规范
-
-### 新建页面流程
-
-1. 在 \`src/pages/\` 下创建页面目录
-2. 创建 \`index.tsx\`（页面组件）
-3. 创建 \`index.config.ts\`（页面配置）
-4. 创建 \`index.css\`（页面样式，可选）
-5. 在 \`src/app.config.ts\` 的 \`pages\` 数组中注册页面路径
-
-或使用 Taro 脚手架命令：
-
-```bash
-pnpm new      # 交互式创建页面/组件
-```
-
-### 组件库
-
-#### UI 组件
-
-UI 组件位于 `@/components/ui`，推荐按需引入：
-
-```typescript
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-```
-
-UI 组件列表:
-
-Accordion,Alert,AlertDialog,AspectRatio,Avatar,Badge,Breadcrumb,Button,ButtonGroup,Calendar,Card,Carousel,Checkbox,CodeBlock,Collapsible,Command,ContextMenu,Dialog,Drawer,DropdownMenu,Field,HoverCard,Input,InputGroup,InputOTP,Label,Menubar,NavigationMenu,Pagination,Popover,Portal,Progress,RadioGroup,Resizable,ScrollArea,Select,Separator,Sheet,Skeleton,Slider,Sonner,Switch,Table,Tabs,Textarea,Toast,Toggle,ToggleGroup,Tooltip
-
-#### Taro 原生组件
-
-可以使用的 Taro 组件（UI 未覆盖）
-
-```typescript
-import { View, Text, Icon, Image } from '@tarojs/components'
-```
-
-Taro 原生组件列表：
-
-Text,Icon,RichText,CheckboxGroup,Editor,Form,Picker,PickerView,PickerViewColumn,Radio,FunctionalPageNavigator,NavigationBar,Navigator,TabItem,Camera,Image,Video,ScrollView,Swiper,SwiperItem,View
-
-### 路径别名
-
-项目配置了 `@/*` 路径别名指向 `src/*`：
-
-```typescript
-import { SomeComponent } from '@/components/some-component'
-import { useUserStore } from '@/stores/user'
-```
-
-### 代码模板
-
-#### 页面组件 (TypeScript + React)
-
-```tsx
-// src/pages/example/index.tsx
-import { View } from '@tarojs/components'
-import { useLoad, useDidShow } from '@tarojs/taro'
-import type { FC } from 'react'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import './index.css'
-
-const ExamplePage: FC = () => {
-  useLoad(() => {
-    console.log('Page loaded.')
-  })
-
-  useDidShow(() => {
-    console.log('Page showed.')
-  })
-
-  return (
-    <View className="p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Hello Taro!</CardTitle>
-          <CardDescription>
-            页面布局用 Taro 基础组件，交互与视觉优先用项目内置 UI 组件。
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <View className="text-sm text-muted-foreground">
-            组件位于 src/components/ui，推荐按需从 @/components/ui/* 引入。
-          </View>
-        </CardContent>
-        <CardFooter className="justify-end">
-          <Button size="sm" onClick={() => console.log('clicked')}>
-            点击
-          </Button>
-        </CardFooter>
-      </Card>
-    </View>
-  )
-}
-
-export default ExamplePage
-```
-
-#### 页面配置
-
-```typescript
-// src/pages/example/index.config.ts
-import { definePageConfig } from '@tarojs/taro'
-
-export default definePageConfig({
-  navigationBarTitleText: '示例页面',
-  enablePullDownRefresh: true,
-  backgroundTextStyle: 'dark',
-})
-```
-
-#### 应用配置
-
-```typescript
-// src/app.config.ts
-import { defineAppConfig } from '@tarojs/taro'
-
-export default defineAppConfig({
-  pages: [
-    'pages/index/index',
-    'pages/example/index',
-  ],
-  window: {
-    backgroundTextStyle: 'light',
-    navigationBarBackgroundColor: '#fff',
-    navigationBarTitleText: 'App',
-    navigationBarTextStyle: 'black',
-  },
-  // TabBar 配置 (可选)
-  // tabBar: {
-  //   list: [
-  //     { pagePath: 'pages/index/index', text: '首页' },
-  //   ],
-  // },
-})
-```
-
-### 发送请求
-
-**IMPORTANT: 禁止直接使用 Taro.request、Taro.uploadFile、Taro.downloadFile，使用 Network.request、Network.uploadFile、Network.downloadFile 替代。**
-
-Network 是对 Taro.request、Taro.uploadFile、Taro.downloadFile 的封装，自动添加项目域名前缀，参数与 Taro 一致。
-
-✅ 正确使用方式
-
-```typescript
-import { Network } from '@/network'
-
-// GET 请求
-const data = await Network.request({
-  url: '/api/hello'
-})
-
-// POST 请求
-const result = await Network.request({
-  url: '/api/user/login',
-  method: 'POST',
-  data: { username, password }
-})
-
-// 文件上传
-await Network.uploadFile({
-  url: '/api/upload',
-  filePath: tempFilePath,
-  name: 'file'
-})
-
-// 文件下载
-await Network.downloadFile({
-  url: '/api/download/file.pdf'
-})
-```
-
-❌ 错误用法
-
-```typescript
-import Taro from '@tarojs/taro'
-
-// ❌ 会导致自动域名拼接无法生效，除非是特殊指定域名
-const data = await Network.request({
-  url: 'http://localhost/api/hello'
-})
-
-// ❌ 不要直接使用 Taro.request
-await Taro.request({ url: '/api/hello' })
-
-// ❌ 不要直接使用 Taro.uploadFile
-await Taro.uploadFile({ url: '/api/upload', filePath, name: 'file' })
-```
-
-### Zustand 状态管理
-
-```typescript
-// src/stores/user.ts
-import { create } from 'zustand'
-
-interface UserState {
-  userInfo: UserInfo | null
-  token: string
-  setUserInfo: (info: UserInfo) => void
-  setToken: (token: string) => void
-  logout: () => void
-}
-
-interface UserInfo {
-  id: string
-  name: string
-  avatar: string
-}
-
-export const useUserStore = create<UserState>((set) => ({
-  userInfo: null,
-  token: '',
-  setUserInfo: (info) => set({ userInfo: info }),
-  setToken: (token) => set({ token }),
-  logout: () => set({ userInfo: null, token: '' }),
-}))
-```
-
-### Taro 生命周期 Hooks
-
-```typescript
-import {
-  useLoad,             // 页面加载 (onLoad)
-  useReady,            // 页面初次渲染完成 (onReady)
-  useDidShow,          // 页面显示 (onShow)
-  useDidHide,          // 页面隐藏 (onHide)
-  usePullDownRefresh,  // 下拉刷新 (onPullDownRefresh)
-  useReachBottom,      // 触底加载 (onReachBottom)
-  useShareAppMessage,  // 分享 (onShareAppMessage)
-  useRouter,           // 获取路由参数
-} from '@tarojs/taro'
-```
-
-### 路由导航
-
-```typescript
-import Taro from '@tarojs/taro'
-
-// 保留当前页面，跳转到新页面
-Taro.navigateTo({ url: '/pages/detail/index?id=1' })
-
-// 关闭当前页面，跳转到新页面
-Taro.redirectTo({ url: '/pages/detail/index' })
-
-// 跳转到 tabBar 页面
-Taro.switchTab({ url: '/pages/index/index' })
-
-// 返回上一页
-Taro.navigateBack({ delta: 1 })
-
-// 获取路由参数
-const router = useRouter()
-const { id } = router.params
-```
-
-### 图标使用 (lucide-react-taro)
-
-**IMPORTANT: 禁止使用 lucide-react，必须使用 lucide-react-taro 替代。**
-
-lucide-react-taro 是 Lucide 图标库的 Taro 适配版本，专为小程序环境优化，API 与 lucide-react 一致：
-
-```tsx
-import { View } from '@tarojs/components'
-import { House, Settings, User, Search, Camera, Zap } from 'lucide-react-taro'
-
-const IconDemo = () => {
-  return (
-    <View className="flex gap-4">
-      {/* 基本用法 */}
-      <House />
-      {/* 自定义尺寸和颜色 */}
-      <Settings size={32} color="#1890ff" />
-      {/* 自定义描边宽度 */}
-      <User size={24} strokeWidth={1.5} />
-      {/* 绝对描边宽度（描边不随 size 缩放） */}
-      <Camera size={48} strokeWidth={2} absoluteStrokeWidth />
-      {/* 组合使用 */}
-      <Zap size={32} color="#ff6b00" strokeWidth={1.5} className="my-icon" />
-    </View>
-  )
-}
-```
-
-常用属性：
-- `size` - 图标大小（默认 24）
-- `color` - 图标颜色（默认 currentColor，小程序中建议显式设置）
-- `strokeWidth` - 线条粗细（默认 2）
-- `absoluteStrokeWidth` - 绝对描边宽度，启用后描边不随 size 缩放
-- `className` / `style` - 自定义样式
-
-更多图标请访问：https://lucide.dev/icons
-
-### TabBar 图标生成 (CLI 工具)
-
-**IMPORTANT: 微信小程序的 TabBar 不支持 base64 或 SVG 图片，必须使用本地 PNG 文件。**
-
-lucide-react-taro 提供了 CLI 工具来生成 TabBar 所需的 PNG 图标：
-
-```bash
-# 生成带选中状态的图标
-npx taro-lucide-tabbar House Settings User -c "#999999" -a "#1890ff"
-
-# 指定输出目录和尺寸
-npx taro-lucide-tabbar House Settings User -c "#999999" -a "#1890ff" -o ./src/assets/tabbar -s 81
-```
-
-CLI 参数：
-- `--color, -c` (默认 #000000): 图标颜色
-- `--active-color, -a`: 选中状态颜色
-- `--size, -s` (默认 81): 图标尺寸
-- `--output, -o` (默认 ./tabbar-icons): 输出目录
-- `--stroke-width` (默认 2): 描边宽度
-
-在 `app.config.ts` 中使用生成的图标：
-
-> IMPORTANT：iconPath 和 selectedIconPath 必须以 `./` 开头，否则图标无法渲染
-
-```typescript
-export default defineAppConfig({
-  tabBar: {
-    color: '#999999',
-    selectedColor: '#1890ff',
-    backgroundColor: '#ffffff',
-    borderStyle: 'black',
-    list: [
-      {
-        pagePath: 'pages/index/index',
-        text: '首页',
-        iconPath: './assets/tabbar/house.png',
-        selectedIconPath: './assets/tabbar/house-active.png',
-      },
-      {
-        pagePath: 'pages/settings/index',
-        text: '设置',
-        iconPath: './assets/tabbar/settings.png',
-        selectedIconPath: './assets/tabbar/settings-active.png',
-      },
-      {
-        pagePath: 'pages/user/index',
-        text: '用户',
-        iconPath: './assets/tabbar/user.png',
-        selectedIconPath: './assets/tabbar/user-active.png',
-      },
-    ],
-  },
-})
-
-### Tailwind CSS 样式开发
-
-IMPORTANT：必须使用 tailwindcss 实现样式，只有在必要情况下才能 fallback 到 css / less
-
-> 项目已集成 Tailwind CSS 4.x + weapp-tailwindcss，支持跨端原子化样式：
-
-```tsx
-import { View, Text } from '@tarojs/components'
-import { Button } from '@/components/ui/button'
-
-<View className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-  <Text className="text-2xl font-bold text-blue-600 mb-4">标题</Text>
-  <View className="w-full px-4">
-    <Button className="w-full" size="lg">
-      按钮
-    </Button>
-  </View>
-</View>
-```
-
-### 性能优化
-
-#### 图片懒加载
-
-```tsx
-import { Image } from '@tarojs/components'
-
-<Image src={imageUrl} lazyLoad mode="aspectFill" />
-```
-
-#### 虚拟列表
-
-```tsx
-import { VirtualList } from '@tarojs/components'
-
-<VirtualList
-  height={500}
-  itemData={list}
-  itemCount={list.length}
-  itemSize={100}
-  renderItem={({ index, style, data }) => (
-    <View style={style}>{data[index].name}</View>
-  )}
-/>
-```
-
-#### 分包加载
-
-```typescript
-// src/app.config.ts
-export default defineAppConfig({
-  pages: ['pages/index/index'],
-  subPackages: [
-    {
-      root: 'packageA',
-      pages: ['pages/detail/index'],
-    },
-  ],
-})
-```
-
-### 小程序限制
-
-| 限制项   | 说明                                     |
-| -------- | ---------------------------------------- |
-| 主包体积 | ≤ 2MB                                    |
-| 总包体积 | ≤ 20MB                                   |
-| 域名配置 | 生产环境需在小程序后台配置合法域名       |
-| 本地开发 | 需在微信开发者工具开启「不校验合法域名」 |
-
-### 权限配置
-
-```typescript
-// src/app.config.ts
-export default defineAppConfig({
-  // ...其他配置
-  permission: {
-    'scope.userLocation': {
-      desc: '你的位置信息将用于小程序位置接口的效果展示'
-    }
-  },
-  requiredPrivateInfos: ['getLocation', 'chooseAddress']
-})
-```
-
-### 位置服务
-
-```typescript
-// 需先在 app.config.ts 中配置 permission
-async function getLocation(): Promise<Taro.getLocation.SuccessCallbackResult> {
-  return await Taro.getLocation({ type: 'gcj02' })
-}
-```
-
-## 后端核心开发规范
-
-本项目后端基于 NestJS + TypeScript 构建，提供高效、可扩展的服务端能力。
-
-### 项目结构
-
-```sh
-.
-├── server/                   # NestJS 后端服务
+├── src/                          # 前端源码
+│   ├── pages/
+│   │   ├── index/                # 首页（服务展示）
+│   │   ├── appointments/         # 预约记录
+│   │   ├── profile/              # 我的
+│   │   ├── service-detail/       # 服务详情
+│   │   ├── booking/              # 预约提交
+│   │   ├── booking-success/      # 预约成功
+│   │   └── admin/                # 管理后台
+│   │       ├── login/            #   登录
+│   │       ├── dashboard/        #   仪表盘
+│   │       ├── services/         #   服务管理
+│   │       ├── appointments/     #   预约管理
+│   │       └── users/            #   用户管理
+│   ├── components/ui/            # UI 组件库（shadcn/ui）
+│   ├── hooks/
+│   │   └── use-auth-guard.ts     # 管理后台登录校验 Hook
+│   ├── network.ts                # 网络请求封装
+│   ├── app.config.ts             # 应用配置（页面路由 + TabBar）
+│   └── app.css                   # 全局样式 + Design Token
+│
+├── server/                       # 后端源码
 │   └── src/
-│       ├── main.ts           # 服务入口
-│       ├── app.module.ts     # 根模块
-│       ├── app.controller.ts # 根控制器
-│       └── app.service.ts    # 根服务
-```
-
-### 开发命令
-
-```sh
-pnpm dev:server // 启动开发服务 (热重载, 默认端口 3000)
-pnpm build:server // 构建生产版本
-```
-
-### 新建模块流程 (CLI)
-
-快速生成样板代码：
-
-```bash
-cd server
-
-# 生成完整的 CRUD 资源 (包含 Module, Controller, Service, DTO, Entity)
-npx nest g resource modules/product
-
-# 仅生成特定部分
-npx nest g module modules/order
-npx nest g controller modules/order
-npx nest g service modules/order
-```
-
-### 环境变量配置
-
-在 server/ 根目录创建 .env 文件：
-
-```sh
-## 服务端口
-PORT=3000
-
-## 微信小程序配置
-WX_APP_ID=你的AppID
-WX_APP_SECRET=你的AppSecret
-
-## JWT 密钥
-JWT_SECRET=your-super-secret-key
-```
-
-在代码中使用 @nestjs/config 读取环境变量：
-
-```typescript
-import { ConfigService } from '@nestjs/config';
-
-// 在 Service 中注入
-constructor(private configService: ConfigService) {}
-
-getWxConfig() {
-  return {
-    appId: this.configService.get<string>('WX_APP_ID'),
-    secret: this.configService.get<string>('WX_APP_SECRET'),
-  };
-}
-```
-
-### 标准响应封装
-
-建议使用拦截器 (Interceptor) 统一 API 响应格式：
-
-```typeScript
-// src/common/interceptors/transform.interceptor.ts
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-
-export interface Response<T> {
-  code: number;
-  data: T;
-  message: string;
-}
-
-@Injectable()
-export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
-    return next.handle().pipe(
-      map((data) => ({
-        code: 200,
-        data,
-        message: 'success',
-      })),
-    );
-  }
-}
-```
-
-在 main.ts 中全局注册：
-
-```typescript
-app.useGlobalInterceptors(new TransformInterceptor());
-```
-
-### 微信登录后端实现
-
-```typescript
-// src/modules/auth/auth.service.ts
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
-import { lastValueFrom } from 'rxjs';
-
-@Injectable()
-export class AuthService {
-  constructor(
-    private httpService: HttpService,
-    private configService: ConfigService,
-  ) {}
-
-  async code2Session(code: string) {
-    const appId = this.configService.get('WX_APP_ID');
-    const secret = this.configService.get('WX_APP_SECRET');
-    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${secret}&js_code=${code}&grant_type=authorization_code`;
-
-    const { data } = await lastValueFrom(this.httpService.get(url));
-
-    if (data.errcode) {
-      throw new UnauthorizedException(`微信登录失败: ${data.errmsg}`);
-    }
-
-    return data; // 包含 openid, session_key
-  }
-}
-```
-
-### 异常处理
-
-使用全局异常过滤器 (Filter) 统一错误响应：
-
-```typescript
-// src/common/filters/http-exception.filter.ts
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/common';
-import { Response } from 'express';
-
-@Catch(HttpException)
-export class HttpExceptionFilter implements ExceptionFilter {
-  catch(exception: HttpException, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const status = exception.getStatus();
-    const exceptionResponse = exception.getResponse();
-
-    response.status(status).json({
-      code: status,
-      message: typeof exceptionResponse === 'string' ? exceptionResponse : (exceptionResponse as any).message,
-      data: null,
-    });
-  }
-}
-```
-
-在 main.ts 中注册：
-
-```
-app.useGlobalFilters(new HttpExceptionFilter());
-```
-
-### 数据库 (Drizzle ORM)
-
-推荐使用 [Drizzle ORM](https://orm.drizzle.team/)，已预安装。
-
-### 类型校验 (Zod)
-
-项目集成了 [Zod](https://zod.dev/) 用于运行时类型校验。
-
-#### 定义 Schema
-
-```typescript
-import { z } from 'zod';
-
-// 基础类型
-const userSchema = z.object({
-  id: z.number(),
-  name: z.string().min(1).max(50),
-  email: z.string().email(),
-  age: z.number().int().positive().optional(),
-});
-
-// 从 schema 推导 TypeScript 类型
-type User = z.infer<typeof userSchema>;
-```
-
-#### 请求校验
-
-```typescript
-// src/modules/user/dto/create-user.dto.ts
-import { z } from 'zod';
-
-export const createUserSchema = z.object({
-  nickname: z.string().min(1, '昵称不能为空').max(20, '昵称最多20个字符'),
-  avatar: z.string().url('头像必须是有效的URL').optional(),
-  phone: z.string().regex(/^1[3-9]\d{9}$/, '手机号格式不正确').optional(),
-});
-
-export type CreateUserDto = z.infer<typeof createUserSchema>;
-
-// 在 Controller 中使用
-@Post()
-create(@Body() body: unknown) {
-  const result = createUserSchema.safeParse(body);
-  if (!result.success) {
-    throw new BadRequestException(result.error.errors);
-  }
-  return this.userService.create(result.data);
-}
+│       ├── db/
+│       │   ├── schema.ts         # 数据库表定义
+│       │   ├── index.ts          # 数据库初始化 + 种子执行
+│       │   └── seed.ts           # 种子数据
+│       ├── modules/
+│       │   ├── service/          # 服务管理模块
+│       │   ├── appointment/      # 预约管理模块
+│       │   ├── time-slot/        # 时段查询模块
+│       │   ├── auth/             # 认证模块（JWT + Passport）
+│       │   └── user/             # 用户管理模块
+│       ├── common/
+│       │   ├── guards/           # JWT Guard + Roles Guard
+│       │   ├── decorators/       # @Public() + @Roles()
+│       │   └── utils/            # 统一响应格式
+│       └── data/                 # SQLite 数据库文件
+│
+├── .cozeproj/prototype/mobile/   # 移动端原型（HTML）
+├── PRD.md                        # 产品需求文档
+├── BACKEND_DESIGN.md             # 后端技术方案
+└── DESIGN.md                     # 设计风格文档
 ```
