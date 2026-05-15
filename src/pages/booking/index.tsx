@@ -29,6 +29,12 @@ const BookingPage = () => {
   const [contactPhone, setContactPhone] = useState('')
 
   useEffect(() => {
+    // 从"我的"页面读取用户信息作为默认联系人
+    const nickname = Taro.getStorageSync('user_nickname') || ''
+    const phone = Taro.getStorageSync('user_phone') || ''
+    if (nickname) setContactName(nickname)
+    if (phone) setContactPhone(phone)
+
     const params = Taro.getCurrentInstance().router?.params
     const serviceId = params?.serviceId
     if (serviceId) fetchService(Number(serviceId))

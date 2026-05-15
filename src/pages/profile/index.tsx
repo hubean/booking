@@ -1,7 +1,7 @@
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { Calendar, Phone, Info, Settings, Camera, Pencil } from 'lucide-react-taro'
+import { Calendar, Phone, Info, Settings, Camera, Pencil, Shield } from 'lucide-react-taro'
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 
@@ -14,8 +14,8 @@ interface UserInfo {
 
 const ProfilePage = () => {
   const [userInfo, setUserInfo] = useState<UserInfo>({
-    nickname: '小初',
-    phone: '138****0000',
+    nickname: Taro.getStorageSync('user_nickname') || '小初',
+    phone: Taro.getStorageSync('user_phone') || '138****0000',
     totalAppointments: 0,
     pendingAppointments: 0,
   })
@@ -61,8 +61,13 @@ const ProfilePage = () => {
   const saveName = () => {
     if (editName.trim()) {
       setUserInfo((prev) => ({ ...prev, nickname: editName.trim() }))
+      Taro.setStorageSync('user_nickname', editName.trim())
     }
     setShowNameDialog(false)
+  }
+
+  const goAdminLogin = () => {
+    Taro.navigateTo({ url: '/pages/admin/login/index' })
   }
 
   const goAppointments = () => {
@@ -143,6 +148,13 @@ const ProfilePage = () => {
               <Text className="flex-1 text-sm text-foreground">设置</Text>
               <Text className="text-sm text-muted-foreground">›</Text>
             </View>
+            <View className="flex items-center px-4 py-4" onClick={goAdminLogin}>
+              <View className="w-8 h-8 bg-primary-container rounded-lg flex items-center justify-center mr-3">
+                <Shield size={16} color="#F97316" />
+              </View>
+              <Text className="flex-1 text-sm text-foreground">管理后台</Text>
+              <Text className="text-sm text-muted-foreground">›</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -150,10 +162,20 @@ const ProfilePage = () => {
       {/* 编辑昵称弹窗 */}
       {showNameDialog && (
         <View
-          className="fixed inset-0 z-50 flex items-end justify-center"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          }}
         >
-          <View className="w-full bg-card rounded-t-2xl p-6 pb-8">
+          <View className="w-full bg-card rounded-t-2xl p-6" style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }}>
             <Text className="block text-base font-semibold text-foreground mb-4">修改昵称</Text>
             <Input
               className="bg-muted border-none rounded-2xl mb-6"
@@ -162,7 +184,7 @@ const ProfilePage = () => {
               onInput={(e) => setEditName(e.detail.value)}
               focus
             />
-            <View className="flex gap-3">
+            <View style={{ display: 'flex', gap: '12px' }}>
               <View
                 className="flex-1 bg-muted rounded-xl py-3 flex items-center justify-center"
                 onClick={() => setShowNameDialog(false)}
