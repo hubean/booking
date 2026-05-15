@@ -4,7 +4,7 @@ import Taro from '@tarojs/taro'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Network } from '@/network'
-import { House, Calendar, Users, Scissors, LogOut, KeyRound } from 'lucide-react-taro'
+import { House, Calendar, Users, Scissors, Tags, LogOut, KeyRound } from 'lucide-react-taro'
 import { useAuthGuard } from '@/hooks/use-auth-guard'
 
 function getAdminHeaders() {
@@ -91,6 +91,7 @@ export default function AdminDashboard() {
 
   const menuItems = [
     { icon: Scissors, label: '服务管理', url: '/pages/admin/services/index', color: '#F97316' },
+    { icon: Tags, label: '分类管理', url: '/pages/admin/categories/index', color: '#8B5CF6' },
     { icon: Calendar, label: '预约管理', url: '/pages/admin/appointments/index', color: '#22C55E' },
     { icon: Users, label: '用户管理', url: '/pages/admin/users/index', color: '#3B82F6' },
   ]

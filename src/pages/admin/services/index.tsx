@@ -4,7 +4,7 @@ import Taro from '@tarojs/taro'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Network } from '@/network'
-import { Plus, ArrowLeft, Pencil, Trash2 } from 'lucide-react-taro'
+import { Plus, ArrowLeft, ChevronUp, ChevronDown, Pencil, Trash2 } from 'lucide-react-taro'
 import { useAuthGuard } from '@/hooks/use-auth-guard'
 
 function getAdminHeaders() {
@@ -12,22 +12,26 @@ function getAdminHeaders() {
   return { Authorization: `Bearer ${token}` }
 }
 
-const CATEGORIES = [
-  { value: 'beauty', label: '美业' },
-  { value: 'fitness', label: '健身' },
-  { value: 'food', label: '餐饮' },
-]
-
 export default function AdminServices() {
   useAuthGuard()
   const [services, setServices] = useState([])
+  const [categories, setCategories] = useState<Array<{id: number; name: string}>>([])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState({
-    name: '', description: '', price: '', duration: '', imageUrl: '', category: 'beauty', status: 'active',
+    name: '', description: '', price: '', duration: '', imageUrl: '', categoryId: '', status: 'active',
   })
 
-  useEffect(() => { loadServices() }, [])
+  useEffect(() => { loadServices(); loadCategories() }, [])
+
+  const loadCategories = async () => {
+    try {
+      const res = await Network.request({ url: '/api/categories', header: getAdminHeaders() })
+      setCategories(res.data?.data || [])
+    } catch (err) {
+      console.error('[AdminServices] load categories error:', err)
+    }
+  }
 
   const loadServices = async () => {
     try {
@@ -39,18 +43,23 @@ export default function AdminServices() {
     }
   }
 
+  const getCategoryName = (categoryId: number) => {
+    const cat = categories.find((c: any) => c.id === categoryId)
+    return cat ? cat.name : '未分类'
+  }
+
   const handleSubmit = async () => {
-    if (!form.name || !form.price || !form.category) {
+    if (!form.name || !form.price || !form.categoryId) {
       Taro.showToast({ title: '请填写必填项', icon: 'none' })
       return
     }
     const data = {
       name: form.name,
       description: form.description,
-      price: Math.round(Number(form.price) * 100), // 元转分
+      price: Math.round(Number(form.price) * 100),
       duration: Number(form.duration) || 60,
       imageUrl: form.imageUrl || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=300&fit=crop',
-      category: form.category,
+      categoryId: Number(form.categoryId),
     }
 
     try {
@@ -83,11 +92,11 @@ export default function AdminServices() {
     setEditingId(item.id)
     setForm({
       name: item.name,
-      description: item.description,
+      description: item.description || '',
       price: String(item.price / 100),
       duration: String(item.duration),
-      imageUrl: item.imageUrl,
-      category: item.category,
+      imageUrl: item.imageUrl || '',
+      categoryId: String(item.categoryId || ''),
       status: item.status,
     })
     setShowForm(true)
@@ -109,9 +118,45 @@ export default function AdminServices() {
     }
   }
 
+  const handleMoveUp = async (index: number) => {
+    if (index === 0) return
+    const orderedIds = services.map((s: any) => s.id)
+    const swapped = [...orderedIds]
+    ;[swapped[index], swapped[index - 1]] = [swapped[index - 1], swapped[index]]
+    try {
+      await Network.request({
+        url: '/api/services/reorder',
+        method: 'PUT',
+        data: { orderedIds: swapped },
+        header: getAdminHeaders(),
+      })
+      loadServices()
+    } catch (err) {
+      Taro.showToast({ title: '排序失败', icon: 'none' })
+    }
+  }
+
+  const handleMoveDown = async (index: number) => {
+    if (index === services.length - 1) return
+    const orderedIds = services.map((s: any) => s.id)
+    const swapped = [...orderedIds]
+    ;[swapped[index], swapped[index + 1]] = [swapped[index + 1], swapped[index]]
+    try {
+      await Network.request({
+        url: '/api/services/reorder',
+        method: 'PUT',
+        data: { orderedIds: swapped },
+        header: getAdminHeaders(),
+      })
+      loadServices()
+    } catch (err) {
+      Taro.showToast({ title: '排序失败', icon: 'none' })
+    }
+  }
+
   const resetForm = () => {
     setEditingId(null)
-    setForm({ name: '', description: '', price: '', duration: '', imageUrl: '', category: 'beauty', status: 'active' })
+    setForm({ name: '', description: '', price: '', duration: '', imageUrl: '', categoryId: '', status: 'active' })
   }
 
   return (
@@ -130,30 +175,45 @@ export default function AdminServices() {
 
       {/* List */}
       <View className="p-4">
-        {services.map((item: any) => (
-          <View key={item.id} className="bg-background rounded-xl p-4 mb-3 shadow-sm">
-            <View className="flex flex-row items-start justify-between">
-              <View className="flex-1 mr-3">
-                <View className="flex flex-row items-center mb-1">
-                  <Text className="block text-base font-semibold text-foreground">{item.name}</Text>
-                  {item.status === 'inactive' && (
-                    <View className="ml-2 bg-muted px-2 py-1 rounded-full">
-                      <Text className="block text-xs text-muted-foreground">已下架</Text>
-                    </View>
-                  )}
-                </View>
-                <Text className="block text-sm text-muted-foreground mb-1">
-                  {CATEGORIES.find(c => c.value === item.category)?.label} · {item.duration}分钟
-                </Text>
-                <Text className="block text-lg font-bold text-primary">¥{item.price / 100}</Text>
+        {services.map((item: any, index: number) => (
+          <View key={item.id} className="bg-background rounded-xl p-4 mb-3 shadow-sm flex flex-row items-start">
+            {/* Sort Controls */}
+            <View className="flex flex-col mr-2 gap-1 mt-1">
+              <View
+                className={`w-7 h-7 rounded-lg items-center justify-center ${index === 0 ? 'bg-muted opacity-40' : 'bg-muted'}`}
+                onClick={() => handleMoveUp(index)}
+              >
+                <ChevronUp size={14} color="#6B7280" />
               </View>
-              <View className="flex flex-row gap-2">
-                <View className="w-8 h-8 rounded-lg bg-muted items-center justify-center" onClick={() => handleEdit(item)}>
-                  <Pencil size={14} color="#6B7280" />
-                </View>
-                <View className="w-8 h-8 rounded-lg bg-red-50 items-center justify-center" onClick={() => handleDelete(item.id)}>
-                  <Trash2 size={14} color="#EF4444" />
-                </View>
+              <View
+                className={`w-7 h-7 rounded-lg items-center justify-center ${index === services.length - 1 ? 'bg-muted opacity-40' : 'bg-muted'}`}
+                onClick={() => handleMoveDown(index)}
+              >
+                <ChevronDown size={14} color="#6B7280" />
+              </View>
+            </View>
+            {/* Info */}
+            <View className="flex-1 mr-2">
+              <View className="flex flex-row items-center mb-1">
+                <Text className="block text-base font-semibold text-foreground">{item.name}</Text>
+                {item.status === 'inactive' && (
+                  <View className="ml-2 bg-muted px-2 py-1 rounded-full">
+                    <Text className="block text-xs text-muted-foreground">已下架</Text>
+                  </View>
+                )}
+              </View>
+              <Text className="block text-sm text-muted-foreground mb-1">
+                {getCategoryName(item.categoryId)} · {item.duration}分钟
+              </Text>
+              <Text className="block text-lg font-bold text-primary">¥{item.price / 100}</Text>
+            </View>
+            {/* Actions */}
+            <View className="flex flex-row gap-2">
+              <View className="w-8 h-8 rounded-lg bg-muted items-center justify-center" onClick={() => handleEdit(item)}>
+                <Pencil size={14} color="#6B7280" />
+              </View>
+              <View className="w-8 h-8 rounded-lg bg-red-50 items-center justify-center" onClick={() => handleDelete(item.id)}>
+                <Trash2 size={14} color="#EF4444" />
               </View>
             </View>
           </View>
@@ -180,16 +240,19 @@ export default function AdminServices() {
             </View>
             <View className="mb-3">
               <Text className="block text-sm text-muted-foreground mb-1">分类 *</Text>
-              <View className="flex flex-row gap-2">
-                {CATEGORIES.map((cat) => (
+              <View className="flex flex-row flex-wrap gap-2">
+                {categories.map((cat: any) => (
                   <View
-                    key={cat.value}
-                    className={`px-4 py-2 rounded-xl ${form.category === cat.value ? 'bg-primary' : 'bg-muted'}`}
-                    onClick={() => setForm({ ...form, category: cat.value })}
+                    key={cat.id}
+                    className={`px-4 py-2 rounded-xl ${String(form.categoryId) === String(cat.id) ? 'bg-primary' : 'bg-muted'}`}
+                    onClick={() => setForm({ ...form, categoryId: String(cat.id) })}
                   >
-                    <Text className={`block text-sm ${form.category === cat.value ? 'text-primary-foreground' : 'text-foreground'}`}>{cat.label}</Text>
+                    <Text className={`block text-sm ${String(form.categoryId) === String(cat.id) ? 'text-primary-foreground' : 'text-foreground'}`}>{cat.name}</Text>
                   </View>
                 ))}
+                {categories.length === 0 && (
+                  <Text className="block text-sm text-muted-foreground">请先创建分类</Text>
+                )}
               </View>
             </View>
             <View className="mb-3">

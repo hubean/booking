@@ -11,6 +11,7 @@ export default defineAppConfig({
     'pages/admin/services/index',
     'pages/admin/appointments/index',
     'pages/admin/users/index',
+    'pages/admin/categories/index',
   ],
   window: {
     backgroundTextStyle: 'light',

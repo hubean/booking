@@ -1,5 +1,22 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 
+// 分类表
+export const categories = sqliteTable('categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(), // 分类名称（如"美业"）
+  key: text('key').notNull().unique(), // 分类标识（如"beauty"）
+  icon: text('icon'), // 图标名称（可选）
+  sortOrder: integer('sort_order').notNull().default(0), // 排序权重，越大越靠前
+  status: text('status', {
+    enum: ['active', 'inactive'],
+  })
+    .notNull()
+    .default('active'),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+})
+
 // 服务项目表
 export const services = sqliteTable('services', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -8,9 +25,10 @@ export const services = sqliteTable('services', {
   price: integer('price').notNull(), // 价格（分）
   duration: integer('duration').notNull(), // 服务时长（分钟）
   imageUrl: text('image_url').notNull(), // 封面图 URL
-  category: text('category', {
-    enum: ['beauty', 'fitness', 'food'],
-  }).notNull(),
+  categoryId: integer('category_id')
+    .notNull()
+    .references(() => categories.id),
+  sortOrder: integer('sort_order').notNull().default(0), // 排序权重，越大越靠前
   status: text('status', {
     enum: ['active', 'inactive'],
   })
@@ -70,6 +88,8 @@ export const users = sqliteTable('users', {
 })
 
 // 类型导出
+export type Category = typeof categories.$inferSelect
+export type NewCategory = typeof categories.$inferInsert
 export type Service = typeof services.$inferSelect
 export type NewService = typeof services.$inferInsert
 export type Appointment = typeof appointments.$inferSelect

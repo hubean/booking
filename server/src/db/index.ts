@@ -13,6 +13,16 @@ export const db = drizzle(sqliteDb, { schema })
 export async function initDb() {
   // 创建表
   sqliteDb.exec(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      key TEXT NOT NULL UNIQUE,
+      icon TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS services (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -20,9 +30,10 @@ export async function initDb() {
       price INTEGER NOT NULL,
       duration INTEGER NOT NULL,
       image_url TEXT NOT NULL,
-      category TEXT NOT NULL DEFAULT 'beauty',
+      category_id INTEGER NOT NULL DEFAULT 1,
       status TEXT NOT NULL DEFAULT 'active',
-      created_at TEXT NOT NULL
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS appointments (
@@ -35,7 +46,7 @@ export async function initDb() {
       contact_name TEXT NOT NULL,
       contact_phone TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS time_slots (
@@ -53,7 +64,7 @@ export async function initDb() {
       password TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
       must_change_password INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `)
 

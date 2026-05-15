@@ -7,12 +7,13 @@ import { AppointmentModule } from '@/modules/appointment/appointment.module'
 import { TimeSlotModule } from '@/modules/time-slot/time-slot.module'
 import { AuthModule } from '@/modules/auth/auth.module'
 import { UserModule } from '@/modules/user/user.module'
+import { CategoryModule } from '@/modules/category/category.module'
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard'
 import { RolesGuard } from '@/common/guards/roles.guard'
 import { initDb } from '@/db'
 
 @Module({
-  imports: [ServiceModule, AppointmentModule, TimeSlotModule, AuthModule, UserModule],
+  imports: [ServiceModule, AppointmentModule, TimeSlotModule, AuthModule, UserModule, CategoryModule],
   controllers: [AppController],
   providers: [
     AppService,

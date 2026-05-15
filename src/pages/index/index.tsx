@@ -11,29 +11,45 @@ interface ServiceItem {
   duration: number
   imageUrl: string
   category: string
+  categoryId: number | null
   status: string
 }
 
-const CATEGORIES = [
-  { key: '', label: '全部' },
-  { key: 'beauty', label: '美业' },
-  { key: 'fitness', label: '健身' },
-  { key: 'food', label: '餐饮' },
-]
+interface CategoryItem {
+  id: number
+  name: string
+  sortOrder: number
+}
 
 const IndexPage = () => {
   const [activeCategory, setActiveCategory] = useState('')
+  const [categories, setCategories] = useState<CategoryItem[]>([])
   const [services, setServices] = useState<ServiceItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
 
   useEffect(() => {
     fetchServices()
   }, [activeCategory])
 
+  const fetchCategories = async () => {
+    try {
+      const res = await Network.request({ url: '/api/categories/active' })
+      console.log('[Index] fetchCategories:', res.data)
+      const data = res.data?.data ?? []
+      setCategories(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('[Index] fetchCategories error:', err)
+    }
+  }
+
   const fetchServices = async () => {
     setLoading(true)
     try {
-      const url = activeCategory ? `/api/services?category=${activeCategory}` : '/api/services'
+      const url = activeCategory ? `/api/services?categoryId=${activeCategory}` : '/api/services'
       const res = await Network.request({ url })
       console.log('[Index] fetchServices:', url, res.data)
       const data = res.data?.data ?? []
@@ -61,19 +77,31 @@ const IndexPage = () => {
   return (
     <View className="flex flex-col h-full bg-background">
       {/* 分类筛选标签栏 */}
-      <View className="bg-surface sticky top-0 z-30 px-4 pt-3 pb-2 flex gap-2">
-        {CATEGORIES.map((cat) => (
+      <View className="bg-surface sticky top-0 z-30 px-4 pt-3 pb-2 flex gap-2 overflow-x-auto">
+        <View
+          className={`px-4 py-1 rounded-full border flex-shrink-0 ${
+            activeCategory === ''
+              ? 'bg-primary border-primary'
+              : 'bg-surface border-border'
+          }`}
+          onClick={() => setActiveCategory('')}
+        >
+          <Text className={`text-sm font-medium ${activeCategory === '' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
+            全部
+          </Text>
+        </View>
+        {categories.map((cat) => (
           <View
-            key={cat.key}
-            className={`px-4 py-1 rounded-full text-sm font-medium border transition-all ${
-              activeCategory === cat.key
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-surface text-muted-foreground border-border'
+            key={cat.id}
+            className={`px-4 py-1 rounded-full border flex-shrink-0 ${
+              activeCategory === String(cat.id)
+                ? 'bg-primary border-primary'
+                : 'bg-surface border-border'
             }`}
-            onClick={() => setActiveCategory(cat.key)}
+            onClick={() => setActiveCategory(String(cat.id))}
           >
-            <Text className={`text-sm font-medium ${activeCategory === cat.key ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
-              {cat.label}
+            <Text className={`text-sm font-medium ${activeCategory === String(cat.id) ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
+              {cat.name}
             </Text>
           </View>
         ))}
