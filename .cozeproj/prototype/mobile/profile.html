@@ -92,12 +92,20 @@
     <!-- 用户信息区 -->
     <section class="px-4 pt-6 pb-2">
       <div class="flex items-center gap-4">
-        <!-- 圆形头像（内含"初"字） -->
-        <div id="user-avatar" class="w-16 h-16 rounded-full bg-primary flex items-center justify-center shrink-0">
-          <span class="text-2xl font-bold text-on-primary">初</span>
+        <!-- 圆形头像（可点击修改） -->
+        <div id="user-avatar" class="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center shrink-0 cursor-pointer hover:opacity-90 active:scale-[0.96] transition-all">
+          <span id="avatar-text" class="text-2xl font-bold text-on-primary">初</span>
+          <div class="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-surface shadow-card flex items-center justify-center border-2 border-surface">
+            <i data-lucide="camera" class="w-3 h-3 text-on-surface-variant"></i>
+          </div>
         </div>
         <div class="flex flex-col gap-1">
-          <h2 id="user-nickname" class="text-xl font-bold text-on-surface">小初</h2>
+          <div class="flex items-center gap-2">
+            <h2 id="user-nickname" class="text-xl font-bold text-on-surface">小初</h2>
+            <button id="btn-edit-nickname" class="w-6 h-6 flex items-center justify-center text-on-surface-variant rounded-full hover:bg-surface-container active:bg-surface-container-high transition-colors">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
           <p id="user-phone" class="text-sm text-on-surface-variant">138****0000</p>
         </div>
       </div>
@@ -175,6 +183,51 @@
 
     <!-- @main-content:end -->
   </main>
+
+  <!-- 编辑头像底部弹窗 -->
+  <div id="avatar-sheet" class="fixed inset-0 z-50 hidden" role="dialog">
+    <div id="avatar-sheet-overlay" class="absolute inset-0 bg-black/50"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-surface rounded-t-2xl overflow-hidden pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="px-6 pt-5 pb-3">
+        <h3 class="text-base font-semibold text-on-surface text-center">修改头像</h3>
+      </div>
+      <div class="px-4 pb-2">
+        <button id="avatar-camera" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-surface-container active:bg-surface-container-high transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <i data-lucide="camera" class="w-5 h-5 text-primary"></i>
+          </div>
+          <span class="text-base font-medium text-on-surface">拍照</span>
+        </button>
+        <button id="avatar-album" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-surface-container active:bg-surface-container-high transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <i data-lucide="image" class="w-5 h-5 text-primary"></i>
+          </div>
+          <span class="text-base font-medium text-on-surface">从相册选择</span>
+        </button>
+      </div>
+      <div class="mx-4 border-t border-outline-variant/10"></div>
+      <div class="px-4 pt-2">
+        <button id="avatar-cancel" class="w-full py-3.5 rounded-xl text-base font-medium text-on-surface-variant hover:bg-surface-container active:bg-surface-container-high transition-colors">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑昵称底部弹窗 -->
+  <div id="nickname-sheet" class="fixed inset-0 z-50 hidden" role="dialog">
+    <div id="nickname-sheet-overlay" class="absolute inset-0 bg-black/50"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-surface rounded-t-2xl overflow-hidden pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="px-6 pt-5 pb-3">
+        <h3 class="text-base font-semibold text-on-surface text-center">修改昵称</h3>
+      </div>
+      <div class="px-6 pb-4">
+        <input id="nickname-input" type="text" maxlength="20" placeholder="请输入新昵称" class="w-full bg-surface-container border-none rounded-xl px-4 py-3 text-base text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors" />
+      </div>
+      <div class="px-6 flex gap-3 pb-2">
+        <button id="nickname-cancel" class="flex-1 bg-surface-container text-on-surface-variant border-none py-3.5 rounded-xl text-base font-semibold hover:bg-surface-container-high active:scale-[0.98] transition-all">取消</button>
+        <button id="nickname-save" class="flex-1 bg-primary text-on-primary py-3.5 rounded-xl text-base font-semibold hover:opacity-90 active:scale-[0.98] transition-all">保存</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 底部 TabBar（一级页专用，二级页不复制此段） -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-surface flex justify-around items-center h-14 pb-[env(safe-area-inset-bottom)] border-t border-outline-variant/10">
@@ -255,6 +308,73 @@
 
       $('#stat-pending').on('click', function () {
         navReset('appointments.html');
+      });
+
+      // ===== 编辑头像 =====
+      // 点击头像 - 弹出底部选择弹窗
+      // 后续应实现：1. 调用相机拍照（小程序 wx.chooseMedia / H5 input[type=file]）
+      // 2. 从相册选择图片 3. 上传到对象存储 4. 更新用户头像 URL
+      $('#user-avatar').on('click', function () {
+        $('#avatar-sheet').removeClass('hidden');
+      });
+
+      // 头像弹窗 - 拍照
+      $('#avatar-camera').on('click', function () {
+        console.log('需要调用第三方接口实现相机拍照功能');
+        $('#avatar-sheet').addClass('hidden');
+      });
+
+      // 头像弹窗 - 从相册选择
+      // 后续应实现：1. 调用 wx.chooseImage / H5 input[type=file] 选择图片
+      // 2. 上传到对象存储获取 URL 3. 更新头像显示
+      $('#avatar-album').on('click', function () {
+        // 模拟选择后更新头像文字为图片样式
+        const avatarText = $('#avatar-text');
+        avatarText.text('初'); // 保持文字，实际应替换为 <img>
+        $('#avatar-sheet').addClass('hidden');
+      });
+
+      // 头像弹窗 - 取消
+      $('#avatar-cancel').on('click', function () {
+        $('#avatar-sheet').addClass('hidden');
+      });
+
+      // 点击遮罩关闭弹窗
+      $('#avatar-sheet-overlay').on('click', function () {
+        $('#avatar-sheet').addClass('hidden');
+      });
+
+      // ===== 编辑昵称 =====
+      // 点击编辑按钮 - 弹出修改昵称弹窗
+      $('#btn-edit-nickname').on('click', function () {
+        const currentName = $('#user-nickname').text();
+        $('#nickname-input').val(currentName);
+        $('#nickname-sheet').removeClass('hidden');
+        // 延迟聚焦，等弹窗动画完成
+        setTimeout(function () { $('#nickname-input').focus(); }, 300);
+      });
+
+      // 昵称弹窗 - 确认保存
+      // 后续应实现：1. 调用后端接口 PUT /api/user/profile 更新昵称
+      // 2. 成功后更新页面显示的昵称 3. 失败显示 Toast 提示
+      $('#nickname-save').on('click', function () {
+        const newName = $('#nickname-input').val().trim();
+        if (newName) {
+          $('#user-nickname').text(newName);
+          // 更新头像文字为昵称第一个字
+          $('#avatar-text').text(newName.charAt(0));
+          $('#nickname-sheet').addClass('hidden');
+        }
+      });
+
+      // 昵称弹窗 - 取消
+      $('#nickname-cancel').on('click', function () {
+        $('#nickname-sheet').addClass('hidden');
+      });
+
+      // 点击遮罩关闭昵称弹窗
+      $('#nickname-sheet-overlay').on('click', function () {
+        $('#nickname-sheet').addClass('hidden');
       });
     });
   </script>
