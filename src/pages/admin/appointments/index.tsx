@@ -4,6 +4,7 @@ import Taro from '@tarojs/taro'
 import { Button } from '@/components/ui/button'
 import { Network } from '@/network'
 import { ArrowLeft } from 'lucide-react-taro'
+import { useAuthGuard } from '@/hooks/use-auth-guard'
 
 function getAdminHeaders() {
   const token = Taro.getStorageSync('admin_token')
@@ -24,6 +25,7 @@ const TAB_LIST = [
 ]
 
 export default function AdminAppointments() {
+  useAuthGuard()
   const [appointments, setAppointments] = useState([])
   const [activeTab, setActiveTab] = useState('')
 

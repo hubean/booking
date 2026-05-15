@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Network } from '@/network'
 import { House, Calendar, Users, Scissors, LogOut, KeyRound } from 'lucide-react-taro'
+import { useAuthGuard } from '@/hooks/use-auth-guard'
 
 function getAdminHeaders() {
   const token = Taro.getStorageSync('admin_token')
@@ -12,6 +13,7 @@ function getAdminHeaders() {
 }
 
 export default function AdminDashboard() {
+  useAuthGuard()
   const [stats, setStats] = useState({ services: 0, appointments: 0, pending: 0, users: 0 })
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [oldPwd, setOldPwd] = useState('')

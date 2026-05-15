@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Network } from '@/network'
 import { Plus, ArrowLeft, Pencil, Trash2 } from 'lucide-react-taro'
+import { useAuthGuard } from '@/hooks/use-auth-guard'
 
 function getAdminHeaders() {
   const token = Taro.getStorageSync('admin_token')
@@ -18,6 +19,7 @@ const CATEGORIES = [
 ]
 
 export default function AdminServices() {
+  useAuthGuard()
   const [services, setServices] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)

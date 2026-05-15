@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Network } from '@/network'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react-taro'
+import { useAuthGuard } from '@/hooks/use-auth-guard'
 
 function getAdminHeaders() {
   const token = Taro.getStorageSync('admin_token')
@@ -12,6 +13,7 @@ function getAdminHeaders() {
 }
 
 export default function AdminUsers() {
+  useAuthGuard()
   const [users, setUsers] = useState([])
   const [showAdd, setShowAdd] = useState(false)
   const [newUsername, setNewUsername] = useState('')
